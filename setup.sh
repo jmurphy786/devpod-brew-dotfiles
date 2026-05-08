@@ -26,6 +26,8 @@ echo "?? Stowing dotfiles..."
 
 cd "$SCRIPT_DIR"
 
+rm -f ~/.bashrc
+
 stow */
 
 echo "? Done!"
