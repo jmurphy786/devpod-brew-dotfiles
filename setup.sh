@@ -2,6 +2,8 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 echo "?? Installing Homebrew packages..."
 
 PACKAGES=(
@@ -19,5 +21,11 @@ for package in "${PACKAGES[@]}"; do
         brew install "$package"
     fi
 done
+
+echo "?? Stowing dotfiles..."
+
+cd "$SCRIPT_DIR"
+
+stow .
 
 echo "? Done!"
