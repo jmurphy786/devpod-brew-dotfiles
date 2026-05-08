@@ -58,8 +58,11 @@ export PATH="$HOME/.tmuxifier/bin:$PATH"
 export PATH="$HOME/.local/share/nvim/mason/bin:$PATH"
 export PATH="/home/linuxbrew/.linuxbrew/bin:$PATH"
 export PATH="/mnt/c/Program Files/WezTerm:$PATH"  # ✅
-# source "$HOME/.bash_module_loader"
-eval "$(tmuxifier init -)"
+
+[ -f "$HOME/.bash_module_loader" ] && source "$HOME/.bash_module_loader"
+command -v tmuxifier &>/dev/null && eval "$(tmuxifier init -)"
+command -v zoxide &>/dev/null && eval "$(zoxide init --cmd cd bash)"
+
 # Add Homebrew to PATH
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 alias tdev='tmuxifier load-session dev'
@@ -100,7 +103,6 @@ EOF
 }
 
 alias pdfopen='pdf=$(find ~/Documents/books -type f -name "*.pdf" | fzf) && cmd.exe /c start "" "$(wslpath -w "$pdf")"'
-eval "$(zoxide init --cmd cd bash)"
 
 export CLAUDE_CONVOS_DIR="$HOME/claude-convos"
 # ============================================================================

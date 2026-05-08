@@ -7,7 +7,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "?? Installing Homebrew packages..."
 
 PACKAGES=(
+    nvim
     stow
+    zoxide
     yazi
     fzf
     lazygit
