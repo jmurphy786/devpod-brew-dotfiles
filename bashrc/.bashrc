@@ -58,7 +58,7 @@ export PATH="$HOME/.tmuxifier/bin:$PATH"
 export PATH="$HOME/.local/share/nvim/mason/bin:$PATH"
 export PATH="/home/linuxbrew/.linuxbrew/bin:$PATH"
 export PATH="/mnt/c/Program Files/WezTerm:$PATH"  # ✅
-source "$HOME/.bash_module_loader"
+# source "$HOME/.bash_module_loader"
 eval "$(tmuxifier init -)"
 # Add Homebrew to PATH
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
@@ -124,19 +124,10 @@ function yazi() {
 export JAVA_HOME="/usr/lib/jvm/java-21-openjdk-amd64"
 export PATH="$HOME/.local/kitty.app/bin:$PATH"
 export PATH="$JAVA_HOME/bin:$PATH"
-export APPDATA="/mnt/c/Users/jordan.murphy/AppData/Roaming"
 alias scrcpy='scrcpy.exe --force-adb-forward'
 export DISPLAY=:0
-
 # This will only work for wezterm and may need to be changed depending on the terminal emulator
 export YAZI_IMAGE_PROTOCOL=sixel
-
-# Replace what you added with this instead
-#__wezterm_osc7() {
-#  printf "\033]7;file://%s%s\033\\" "$HOSTNAME" "$PWD"
-#}
-
-#PROMPT_COMMAND="${PROMPT_COMMAND%;}; __wezterm_osc7"
 
 export NVM_DIR="$HOME/.nvm"
 
