@@ -26,6 +26,6 @@ echo "?? Stowing dotfiles..."
 
 cd "$SCRIPT_DIR"
 
-stow .
+stow */
 
 echo "? Done!"
