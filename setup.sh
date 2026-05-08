@@ -12,6 +12,7 @@ PACKAGES=(
     luarocks
     zoxide
     yazi
+    imagemagick
     fzf
     lazygit
 )
