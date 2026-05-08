@@ -9,6 +9,7 @@ echo "?? Installing Homebrew packages..."
 PACKAGES=(
     nvim
     stow
+    luarocks
     zoxide
     yazi
     fzf
