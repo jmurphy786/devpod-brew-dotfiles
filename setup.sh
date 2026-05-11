@@ -22,11 +22,13 @@ for package in "${PACKAGES[@]}"; do
     fi
 done
 
+rm -f ~/.bashrc 
 echo "?? Stowing dotfiles..."
 cd "$SCRIPT_DIR"
-rm -f ~/.bashrc 
 
+stow .
 echo "?? Sourcing bashrc..."
 source ~/.bashrc
 
-stow */echo "? Done!"
+
+echo "? Done!"
