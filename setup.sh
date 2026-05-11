@@ -10,6 +10,7 @@ echo "?? Installing Homebrew packages..."
 PACKAGES=(
     stow
     zoxide
+    npm
     yazi
     luarocks
     imagemagick
