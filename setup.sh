@@ -25,8 +25,7 @@ done
 rm -f ~/.bashrc 
 echo "?? Stowing dotfiles..."
 cd "$SCRIPT_DIR"
-
-stow .
+stow --target="$HOME" */
 echo "?? Sourcing bashrc..."
 source ~/.bashrc
 
