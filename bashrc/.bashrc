@@ -229,6 +229,10 @@ __fzf_file_widget() {
     fi
 }
 
+if [ -z "$TMUX" ]; then
+    tmux attach-session -t main || tmuxifier load-session portalsv2
+fi
+
 # Bind Ctrl+G to the function
 bind -x '"\C-g": __fzf_file_widget'
 
