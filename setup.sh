@@ -33,4 +33,6 @@ stow --target="$HOME" */
 
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 
+source ~/.bashrc
+tmux source-file .tmux.conf
 echo "? Done!"

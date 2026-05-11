@@ -230,7 +230,7 @@ __fzf_file_widget() {
 }
 
 if [ -z "$TMUX" ]; then
-    tmux attach-session -t main || tmuxifier load-session portalsv2
+    tmux attach-session 2>/dev/null || tmux new-session -s main
 fi
 
 # Bind Ctrl+G to the function
