@@ -136,9 +136,42 @@ export YAZI_IMAGE_PROTOCOL=sixel
 export NVM_DIR="$HOME/.nvm"
 
 
-source /usr/share/fzf/key-bindings.bash
-source /usr/share/fzf/completion.bash
-[ -f ~/.fzf.bash ] && source ~/.fzf.bash
+# =================================================
+# FZF Usage
+# =================================================
+
+cat > ~/.fdignore << 'EOF'
+.git/
+node_modules/
+.cache/
+.cargo/
+.rustup/
+.npm/
+.local/share/
+.mozilla/
+__pycache__/
+*.pyc
+.venv/
+venv/
+target/
+dist/
+build/
+.wine/
+.steam/
+EOF
+
+# fzf
+if [[ -f /usr/share/fzf/key-bindings.bash ]]; then
+  source /usr/share/fzf/key-bindings.bash
+  source /usr/share/fzf/completion.bash
+elif [[ -f /usr/share/doc/fzf/examples/key-bindings.bash ]]; then
+  source /usr/share/doc/fzf/examples/key-bindings.bash
+  source /usr/share/doc/fzf/examples/completion.bash
+elif command -v fzf &>/dev/null; then
+  eval "$(fzf --bash)"
+fi
+
+
 
 # Use fd for fzf completion (respects .fdignore)
 _fzf_compgen_path() {
