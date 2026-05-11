@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
-
 set -e
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-
 echo "?? Installing Homebrew packages..."
-
 PACKAGES=(
     stow
     zoxide
@@ -17,7 +13,6 @@ PACKAGES=(
     fzf
     lazygit
 )
-
 for package in "${PACKAGES[@]}"; do
     if brew list "$package" &>/dev/null; then
         echo "V $package already installed, skipping"
@@ -27,12 +22,11 @@ for package in "${PACKAGES[@]}"; do
     fi
 done
 
+echo "?? Installing dotnet tools..."
+dotnet tool install --global roslyn-language-server --prerelease
+
 echo "?? Stowing dotfiles..."
-
 cd "$SCRIPT_DIR"
-
 rm -f ~/.bashrc
-
 stow */
-
 echo "? Done!"

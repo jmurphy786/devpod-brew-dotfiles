@@ -125,6 +125,7 @@ function yazi() {
 # Java - use WSL JDK (better for Gradle)
 export JAVA_HOME="/usr/lib/jvm/java-21-openjdk-amd64"
 export PATH="$HOME/.local/kitty.app/bin:$PATH"
+export PATH="$HOME/.dotnet/tools:$PATH"
 export PATH="$JAVA_HOME/bin:$PATH"
 alias scrcpy='scrcpy.exe --force-adb-forward'
 export DISPLAY=:0
