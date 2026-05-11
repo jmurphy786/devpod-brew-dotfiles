@@ -6,7 +6,6 @@ return {
         "ts_ls",
         "lua_ls",
         "harper_ls",
-        "roslyn"
       },
       automatic_enable = {
         exclude = { "roslyn" },
