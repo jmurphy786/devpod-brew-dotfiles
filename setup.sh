@@ -11,6 +11,7 @@ PACKAGES=(
     stow
     zoxide
     yazi
+    luarocks
     imagemagick
     fzf
     lazygit
