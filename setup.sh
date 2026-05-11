@@ -2,16 +2,17 @@
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
 echo "?? Installing Homebrew packages..."
 PACKAGES=(
     stow
     zoxide
     tmux
+    neovim
     npm
     yazi
     luarocks
     imagemagick
-    tmux
     fzf
     lazygit
 )
@@ -25,11 +26,15 @@ for package in "${PACKAGES[@]}"; do
 done
 
 rm -f ~/.bashrc 
+
 echo "?? Stowing dotfiles..."
 cd "$SCRIPT_DIR"
 stow --target="$HOME" */
-echo "?? Sourcing bashrc..."
-source ~/.bashrc
 
+echo "?? Installing TPM..."
+git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+
+echo "?? Installing tmux plugins..."
+~/.tmux/plugins/tpm/bin/install_plugins
 
 echo "? Done!"
