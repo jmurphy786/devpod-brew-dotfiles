@@ -30,7 +30,7 @@ vim.opt.foldlevel = 99
 -- CLIPBOARD (WSL Windows)
 -- ============================================================
 
-if vim.fn.has("wsl") == 1 then
+if vim.fn.has("wsl") == 1 and vim.fn.executable("clip.exe") == 1 then
   vim.g.clipboard = {
     name = "WslClipboard",
     copy = {
@@ -44,8 +44,20 @@ if vim.fn.has("wsl") == 1 then
     cache_enabled = 0,
   }
 else
-  vim.opt.clipboard = "unnamedplus"
+  vim.g.clipboard = {
+    name = "OSC52",
+    copy = {
+      ["+"] = require("vim.ui.clipboard.osc52").copy("+"),
+      ["*"] = require("vim.ui.clipboard.osc52").copy("*"),
+    },
+    paste = {
+      ["+"] = function() return {} end,
+      ["*"] = function() return {} end,
+    },
+  }
 end
+
+vim.opt.clipboard = "unnamedplus"
 
 vim.g.netrw_browsex_viewer = "explorer.exe"
 
