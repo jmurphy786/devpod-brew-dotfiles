@@ -31,4 +31,6 @@ echo "?? Stowing dotfiles..."
 cd "$SCRIPT_DIR"
 stow --target="$HOME" */
 
+git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+
 echo "? Done!"
