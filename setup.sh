@@ -31,10 +31,4 @@ echo "?? Stowing dotfiles..."
 cd "$SCRIPT_DIR"
 stow --target="$HOME" */
 
-echo "?? Installing TPM..."
-git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
-
-echo "?? Installing tmux plugins..."
-~/.tmux/plugins/tpm/bin/install_plugins
-
 echo "? Done!"
