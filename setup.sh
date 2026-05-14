@@ -9,6 +9,7 @@ PACKAGES=(
     zoxide
     tmux
     neovim
+    resvg
     npm
     yazi
     luarocks
