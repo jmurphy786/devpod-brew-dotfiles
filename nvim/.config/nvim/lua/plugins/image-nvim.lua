@@ -1,7 +1,7 @@
 return {
   "3rd/image.nvim",
-  enabled = vim.env.NVIM_PROFILE == "personal",
   build = false,
+  enabled = vim.env.NVIM_PROFILE == "personal",
   opts = {
     processor = "magick_rock",
     backend = "sixel",  -- WezTerm supports sixel
