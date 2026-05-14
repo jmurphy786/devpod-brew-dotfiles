@@ -67,7 +67,7 @@ command -v zoxide &>/dev/null && eval "$(zoxide init --cmd cd bash)"
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 alias tdev='tmuxifier load-session dev'
 alias tkill='tmux kill-server'
-
+export NVIM_PROFILE=work
 # ===========================================================================
 # Scripts
 # ===========================================================================

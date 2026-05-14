@@ -1,5 +1,6 @@
 return {
   "3rd/image.nvim",
+  enabled = vim.env.NVIM_PROFILE == "personal",
   build = false,
   opts = {
     processor = "magick_cli",

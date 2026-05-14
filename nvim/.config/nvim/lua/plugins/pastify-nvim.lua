@@ -1,5 +1,6 @@
 return {
   "TobinPalmer/pastify.nvim",
+  enabled = vim.env.NVIM_PROFILE == "personal",
   cmd = { "Pastify", "PastifyAfter" },
   event = { "BufReadPost" },
   opts = {
