@@ -32,6 +32,7 @@ return {
       vim.lsp.config("harper_ls", { capabilities = capabilities })
       vim.lsp.config("roslyn", {
         capabilities = capabilities,
+        filetypes = {"cs"},
         cmd = {
           vim.fn.stdpath("data") .. "/mason/bin/roslyn",
           "--logLevel=Debug",

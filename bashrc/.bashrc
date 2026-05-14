@@ -56,8 +56,8 @@ PROMPT_COMMAND=""
 export PATH="$HOME/bin:$PATH"
 export PATH="$HOME/.tmuxifier/bin:$PATH"
 export PATH="$HOME/.local/share/nvim/mason/bin:$PATH"
-export PATH="/home/linuxbrew/.linuxbrew/bin:$PATH"
-export PATH="/mnt/c/Program Files/WezTerm:$PATH"  # ✅
+#export PATH="/home/linuxbrew/.linuxbrew/bin:$PATH"
+#export PATH="/mnt/c/Program Files/WezTerm:$PATH"  # ✅
 
 [ -f "$HOME/.bash_module_loader" ] && source "$HOME/.bash_module_loader"
 command -v tmuxifier &>/dev/null && eval "$(tmuxifier init -)"
@@ -72,68 +72,16 @@ alias tkill='tmux kill-server'
 # Scripts
 # ===========================================================================
 
-daily() {
-  NOTES_DIR="$HOME/Documents/personal/routines"
-  DAILY_DIR="$NOTES_DIR/daily"
-  TODAY=$(date +%Y-%m-%d)
-  DAILY_FILE="$DAILY_DIR/$TODAY.md"
-
-  mkdir -p "$DAILY_DIR"
-
-  if [ ! -f "$DAILY_FILE" ]; then
-    cat > "$DAILY_FILE" << EOF
-# Daily Note - $(date '+%B %d, %Y')
-
-## Work Tasks
-- [ ] 
-
-## Gym Notes
-- []
-
-##
-Personal Notes
-- []
-
-## Links
-- [[$(date -d 'yesterday' +%Y-%m-%d)]] (Yesterday)
-EOF
-  fi
-
-  cd "$DAILY_DIR" && nvim "$DAILY_FILE"
-}
-
-alias pdfopen='pdf=$(find ~/Documents/books -type f -name "*.pdf" | fzf) && cmd.exe /c start "" "$(wslpath -w "$pdf")"'
-
-export CLAUDE_CONVOS_DIR="$HOME/claude-convos"
-# ============================================================================
-# STARTUP
-# ============================================================================
-
-#fastfetch
-
-alias bat='batcat'
-
 # in ~/.bashrc
 function yazi() {
   FZF_DEFAULT_OPTS="" command yazi "$@"
 }
 
-# ==========================================
-# Android & Java - Using Windows installations
-# ==========================================
-
-# Java - use WSL JDK (better for Gradle)
-export JAVA_HOME="/usr/lib/jvm/java-21-openjdk-amd64"
-export PATH="$HOME/.local/kitty.app/bin:$PATH"
-export PATH="$HOME/.dotnet/tools/:$PATH"
-
-export PATH="$JAVA_HOME/bin:$PATH"
 alias scrcpy='scrcpy.exe --force-adb-forward'
 export DISPLAY=:0
 # This will only work for wezterm and may need to be changed depending on the terminal emulator
 export YAZI_IMAGE_PROTOCOL=sixel
 
-export NVM_DIR="$HOME/.nvm"
 
 
 # =================================================
@@ -236,3 +184,4 @@ fi
 # Bind Ctrl+G to the function
 bind -x '"\C-g": __fzf_file_widget'
 
+[ -f ~/.bashrc.host ] && source ~/.bashrc.host
