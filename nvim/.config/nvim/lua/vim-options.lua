@@ -15,7 +15,6 @@ vim.opt.number = true
 -- General
 vim.g.mapleader = " "
 vim.opt.swapfile = false
-vim.opt.clipboard = "unnamedplus"
 vim.opt.autoread = true
 vim.opt.autowriteall = false
 vim.opt.lazyredraw = false
@@ -25,43 +24,24 @@ vim.opt.foldmethod = "expr"
 vim.opt.foldexpr = "nvim_treesitter#foldexpr()"
 vim.opt.foldlevel = 99
 
+vim.g.netrw_browsex_viewer = "explorer.exe"
 
--- ============================================================
--- CLIPBOARD (WSL Windows)
--- ============================================================
-
-if vim.fn.has("wsl") == 1 and vim.fn.executable("clip.exe") == 1 then
-  vim.g.clipboard = {
-    name = "WslClipboard",
-    copy = {
-      ["+"] = "clip.exe",
-      ["*"] = "clip.exe",
-    },
-    paste = {
-      ["+"] = 'powershell.exe -c [Console]::Out.Write($(Get-Clipboard -Raw).tostring().replace("`r", ""))',
-      ["*"] = 'powershell.exe -c [Console]::Out.Write($(Get-Clipboard -Raw).tostring().replace("`r", ""))',
-    },
-    cache_enabled = 0,
-  }
-else
-  vim.g.clipboard = {
-    name = "OSC52",
-    copy = {
-      ["+"] = require("vim.ui.clipboard.osc52").copy("+"),
-      ["*"] = require("vim.ui.clipboard.osc52").copy("*"),
-    },
-    paste = {
-      ["+"] = function() return {} end,
-      ["*"] = function() return {} end,
-    },
-  }
+if vim.fn.has('wsl') == 1 then
+    vim.g.clipboard = {
+        name = 'WslClipboard',
+        copy = {
+            ['+'] = 'clip.exe',
+            ['*'] = 'clip.exe',
+        },
+        paste = {
+            ['+'] = 'powershell.exe -c [Console]::Out.Write($(Get-Clipboard -Raw).tostring().replace("`r", ""))',
+            ['*'] = 'powershell.exe -c [Console]::Out.Write($(Get-Clipboard -Raw).tostring().replace("`r", ""))',
+        },
+        cache_enabled = 0,
+    }
 end
 
 vim.opt.clipboard = "unnamedplus"
-
-vim.g.netrw_browsex_viewer = "explorer.exe"
-
-
 -- ============================================================
 -- APPEARANCE
 -- ============================================================
