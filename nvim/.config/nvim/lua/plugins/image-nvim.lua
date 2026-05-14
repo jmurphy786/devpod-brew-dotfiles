@@ -3,7 +3,7 @@ return {
   enabled = vim.env.NVIM_PROFILE == "personal",
   build = false,
   opts = {
-    processor = "magick_cli",
+    processor = "magick_rock",
     backend = "sixel",  -- WezTerm supports sixel
     integrations = {
       markdown = {
