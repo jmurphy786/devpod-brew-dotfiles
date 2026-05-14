@@ -12,8 +12,6 @@ PACKAGES=(
     resvg
     npm
     yazi
-    luarocks
-    imagemagick
     fzf
     lazygit
 )
