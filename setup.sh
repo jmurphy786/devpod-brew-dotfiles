@@ -2,18 +2,25 @@
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Use API to avoid cloning homebrew-core
+export HOMEBREW_INSTALL_FROM_API=1
+export HOMEBREW_NO_INSTALL_FROM_API=0
+
 # Install Homebrew if not already installed
 if ! command -v brew &>/dev/null; then
     echo "Installing Homebrew..."
     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi
 
-# Setup Homebrew env
-eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-
-# Use API to avoid cloning homebrew-core
-export HOMEBREW_INSTALL_FROM_API=1
-export HOMEBREW_NO_INSTALL_FROM_API=0
+# Try both possible brew locations
+if [ -f /home/linuxbrew/.linuxbrew/bin/brew ]; then
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+elif [ -f /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+else
+    echo "Homebrew not found, exiting"
+    exit 1
+fi
 
 echo "Installing Homebrew packages..."
 PACKAGES=(
