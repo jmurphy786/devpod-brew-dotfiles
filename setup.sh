@@ -8,6 +8,7 @@ PACKAGES=(
     stow
     zoxide
     tmux
+    lazydocker
     resvg
     npm
     yazi
