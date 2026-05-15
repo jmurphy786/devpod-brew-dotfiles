@@ -8,7 +8,6 @@ PACKAGES=(
     stow
     zoxide
     tmux
-    neovim
     resvg
     npm
     yazi
