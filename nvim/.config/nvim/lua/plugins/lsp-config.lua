@@ -27,7 +27,13 @@ return {
 
       require("mason-lspconfig").setup(opts)
 
-      vim.lsp.config("ts_ls", { capabilities = capabilities })
+      vim.lsp.config("ts_ls", {
+        capabilities = capabilities,
+        cmd = { "typescript-language-server", "--stdio" },
+        filetypes = { "typescript", "typescriptreact", "javascript", "javascriptreact" },
+        root_markers = { "tsconfig.json", "package.json" },
+      })
+
       vim.lsp.config("lua_ls", { capabilities = capabilities })
       vim.lsp.config("harper_ls", { capabilities = capabilities })
       vim.lsp.config("roslyn", {
