@@ -6,9 +6,11 @@ eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 echo "?? Installing Homebrew packages..."
 PACKAGES=(
     stow
+    posting
     zoxide
     tmux
     lazydocker
+    ripgrep
     resvg
     npm
     yazi

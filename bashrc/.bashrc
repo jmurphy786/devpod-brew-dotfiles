@@ -77,8 +77,6 @@ function yazi() {
   FZF_DEFAULT_OPTS="" command yazi "$@"
 }
 
-alias scrcpy='scrcpy.exe --force-adb-forward'
-export DISPLAY=:0
 # This will only work for wezterm and may need to be changed depending on the terminal emulator
 export YAZI_IMAGE_PROTOCOL=sixel
 
