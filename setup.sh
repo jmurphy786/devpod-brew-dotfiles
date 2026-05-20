@@ -10,6 +10,7 @@ PACKAGES=(
     zoxide
     tmux
     lazydocker
+    starship
     ripgrep
     resvg
     npm

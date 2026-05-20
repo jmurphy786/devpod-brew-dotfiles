@@ -6,6 +6,7 @@ return {
         "ts_ls",
         "lua_ls",
         "harper_ls",
+        "markdown_oxide",
       },
       automatic_enable = {
         exclude = { "roslyn" },
@@ -52,10 +53,17 @@ return {
           },
         },
       })
+
       vim.lsp.config("markdown_oxide", {
+        cmd = { "markdown-oxide" },
+        filetypes = { "markdown" },
+        root_markers = { ".moxide.toml", ".obsidian", ".git" },
         capabilities = vim.tbl_deep_extend("force", capabilities, {
           workspace = {
-            didChangeWatchedFiles = { dynamicRegistration = true },
+            didChangeWatchedFiles = {
+              dynamicRegistration = true,
+              relativePatternSupport = true,
+            },
           },
         }),
         on_attach = function(client, bufnr)
@@ -66,7 +74,6 @@ return {
           end
         end,
       })
-
       vim.lsp.enable("ts_ls")
       vim.lsp.enable("lua_ls")
       vim.lsp.enable("harper_ls")

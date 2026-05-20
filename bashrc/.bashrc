@@ -179,6 +179,8 @@ if [ -z "$TMUX" ]; then
     tmux attach-session 2>/dev/null || tmux new-session -s main
 fi
 
+eval "$(starship init bash)"
+
 # Bind Ctrl+G to the function
 bind -x '"\C-g": __fzf_file_widget'
 
