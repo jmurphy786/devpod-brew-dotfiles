@@ -8,7 +8,7 @@ PACKAGES=(
     stow
     posting
     zoxide
-    tmux
+    zellij
     lazydocker
     starship
     opencode

@@ -9,44 +9,6 @@ alias ll='ls -lah'
 alias grep='grep --color=auto'
 PS1='[\u@\h \W]\$ '
 
-# BettecopeFuzzyCommandSearch) completion
-# if [ -f /etc/bash_completion ]; then
-#   . /etc/bash_completion
-# fi
-
-# dedupe_path() {
-#   local new_path=""
-#   local -A seen
-#   IFS=: read -ra parts <<< "$PATH"
-#   for part in "${parts[@]}"; do
-#     if [[ -z "${seen[$part]}" ]]; then
-#       seen[$part]=1
-#       new_path="${new_path:+$new_path:}$part"
-#     fi
-#   done
-#   export PATH="$new_path"
-# }
-
-tmux-kill() {
-  echo "Killing tmux server and cleaning nvim undo cache..."
-  tmux kill-server
-
-  # Clean up nvim undo files
-  local undo_dir="$HOME/.local/state/nvim/undo"
-  if [ -d "$undo_dir" ]; then
-    rm -rf "$undo_dir"/*
-    echo "✓ Cleared nvim undo cache: $undo_dir"
-  fi
-
-  # Alternative location (some systems use this)
-  local cache_undo="$HOME/.cache/nvim/undo"
-  if [ -d "$cache_undo" ]; then
-    rm -rf "$cache_undo"/*
-    echo "✓ Cleared nvim undo cache: $cache_undo"
-  fi
-}
-
-
 # ============================================================================
 # PATH CONFIGURATION
 # ============================================================================
@@ -54,19 +16,11 @@ tmux-kill() {
 PROMPT_COMMAND=""
 
 export PATH="$HOME/bin:$PATH"
-export PATH="$HOME/.tmuxifier/bin:$PATH"
 export PATH="$HOME/.local/share/nvim/mason/bin:$PATH"
-#export PATH="/home/linuxbrew/.linuxbrew/bin:$PATH"
-#export PATH="/mnt/c/Program Files/WezTerm:$PATH"  # ✅
-
-[ -f "$HOME/.bash_module_loader" ] && source "$HOME/.bash_module_loader"
-command -v tmuxifier &>/dev/null && eval "$(tmuxifier init -)"
 command -v zoxide &>/dev/null && eval "$(zoxide init --cmd cd bash)"
 
 # Add Homebrew to PATH
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-alias tdev='tmuxifier load-session dev'
-alias tkill='tmux kill-server'
 export NVIM_PROFILE=work
 # ===========================================================================
 # Scripts
@@ -175,8 +129,8 @@ __fzf_file_widget() {
     fi
 }
 
-if [ -z "$TMUX" ]; then
-    tmux attach-session 2>/dev/null || tmux new-session -s main
+if [ -z "$ZELLIJ" ]; then
+    zellij attach 2>/dev/null || zellij
 fi
 
 eval "$(starship init bash)"
