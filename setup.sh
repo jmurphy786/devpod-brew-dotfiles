@@ -11,6 +11,7 @@ PACKAGES=(
     tmux
     lazydocker
     starship
+    opencode
     ripgrep
     resvg
     npm
