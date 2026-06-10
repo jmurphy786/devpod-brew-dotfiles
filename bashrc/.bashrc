@@ -7,21 +7,47 @@
 alias ls='ls --color=auto'
 alias ll='ls -lah'
 alias grep='grep --color=auto'
-PS1='[\u@\h \W]\$ '
+
+tmux-kill() {
+  echo "Killing tmux server and cleaning nvim undo cache..."
+  tmux kill-server
+
+  # Clean up nvim undo files
+  local undo_dir="$HOME/.local/state/nvim/undo"
+  if [ -d "$undo_dir" ]; then
+    rm -rf "$undo_dir"/*
+    echo "✓ Cleared nvim undo cache: $undo_dir"
+  fi
+
+  # Alternative location (some systems use this)
+  local cache_undo="$HOME/.cache/nvim/undo"
+  if [ -d "$cache_undo" ]; then
+    rm -rf "$cache_undo"/*
+    echo "✓ Cleared nvim undo cache: $cache_undo"
+  fi
+}
+
 
 # ============================================================================
 # PATH CONFIGURATION
 # ============================================================================
 
-PROMPT_COMMAND=""
-
-export PATH="$HOME/bin:$PATH"
-export PATH="$HOME/.local/share/nvim/mason/bin:$PATH"
-command -v zoxide &>/dev/null && eval "$(zoxide init --cmd cd bash)"
+#PROMPT_COMMAND=""
 
 # Add Homebrew to PATH
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-export NVIM_PROFILE=work
+export PATH="$HOME/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.tmuxifier/bin:$PATH"
+export PATH="$HOME/.local/share/nvim/mason/bin:$PATH"
+
+[ -f "$HOME/.bash_module_loader" ] && source "$HOME/.bash_module_loader"
+command -v tmuxifier &>/dev/null && eval "$(tmuxifier init -)"
+command -v zoxide &>/dev/null && eval "$(zoxide init --cmd cd bash)"
+
+alias tdev='tmuxifier load-session dev'
+alias tkill='tmux kill-server'
+
 # ===========================================================================
 # Scripts
 # ===========================================================================
@@ -39,26 +65,6 @@ export YAZI_IMAGE_PROTOCOL=sixel
 # =================================================
 # FZF Usage
 # =================================================
-
-cat > ~/.fdignore << 'EOF'
-.git/
-node_modules/
-.cache/
-.cargo/
-.rustup/
-.npm/
-.local/share/
-.mozilla/
-__pycache__/
-*.pyc
-.venv/
-venv/
-target/
-dist/
-build/
-.wine/
-.steam/
-EOF
 
 # fzf
 if [[ -f /usr/share/fzf/key-bindings.bash ]]; then
@@ -81,7 +87,6 @@ _fzf_compgen_path() {
 _fzf_compgen_dir() {
   fd --type d --hidden --follow --exclude ".git" . "$1"
 }
-
 export FZF_COMPLETION_TRIGGER='**'
 export FZF_DEFAULT_COMMAND='fd --type f  --hidden --follow --max-depth 4'
 export FZF_CTRL_T_COMMAND='fd --type f --hidden --follow --max-depth 4'
@@ -129,13 +134,53 @@ __fzf_file_widget() {
     fi
 }
 
-if [ -z "$ZELLIJ" ]; then
-    zellij attach 2>/dev/null || zellij
-fi
+# SSH into a devpod workspace via fzf
+dpod() {
+  local workspace
+  workspace=$(devpod list --output plain 2>/dev/null | awk 'NR>1 {print $1}' | fzf --prompt="SSH into workspace: ")
+  [ -z "$workspace" ] && return
+  devpod ssh "$workspace"
+}
 
-eval "$(starship init bash)"
+dforward() {
+  local workspace ports port_args
+  devpod list --output plain &>/dev/null
+  workspace=$(devpod list --output plain 2>/dev/null | awk 'NR>1 {print $1}' | fzf --prompt="Forward ports for workspace: ")
+  [ -z "$workspace" ] && return
+
+  echo "Enter ports to forward (space separated, e.g: 6080 5000 6000 7000):"
+  read -r -a ports
+
+  port_args=()
+  for port in "${ports[@]}"; do
+    port_args+=(--forward-ports "$port:$port")
+  done
+
+  echo "Forwarding ports: ${ports[*]}"
+  echo "Ctrl+C to stop"
+  devpod ssh "$workspace" "${port_args[@]}"
+}
+
+# Delete a devpod workspace via fzf
+function dpod-rm() {
+  local workspace
+  workspace=$(devpod list --output plain 2>/dev/null | awk 'NR>1 {print $1}' | fzf --prompt="Delete workspace: ")
+  if [ -n "$workspace" ]; then
+    read -p "Delete '$workspace'? (y/N) " confirm
+    [[ "$confirm" == [yY] ]] && devpod delete "$workspace"
+  fi
+}
 
 # Bind Ctrl+G to the function
 bind -x '"\C-g": __fzf_file_widget'
+# ~/.bashrc
 
+eval "$(starship init bash)"
+
+adb kill-server 2>/dev/null
+adb -a nodaemon server start &>/dev/null &
+export TERM=xterm-256color
+
+[ -f ~/.secrets ] && source ~/.secrets
 [ -f ~/.bashrc.host ] && source ~/.bashrc.host
+

@@ -31,7 +31,6 @@ done
 rm -f ~/.bashrc 
 
 echo "?? Stowing dotfiles..."
-git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 
 cd "$SCRIPT_DIR"
 stow --target="$HOME" */
