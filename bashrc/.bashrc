@@ -142,25 +142,6 @@ dpod() {
   devpod ssh "$workspace"
 }
 
-dforward() {
-  local workspace ports port_args
-  devpod list --output plain &>/dev/null
-  workspace=$(devpod list --output plain 2>/dev/null | awk 'NR>1 {print $1}' | fzf --prompt="Forward ports for workspace: ")
-  [ -z "$workspace" ] && return
-
-  echo "Enter ports to forward (space separated, e.g: 6080 5000 6000 7000):"
-  read -r -a ports
-
-  port_args=()
-  for port in "${ports[@]}"; do
-    port_args+=(--forward-ports "$port:$port")
-  done
-
-  echo "Forwarding ports: ${ports[*]}"
-  echo "Ctrl+C to stop"
-  devpod ssh "$workspace" "${port_args[@]}"
-}
-
 # Delete a devpod workspace via fzf
 function dpod-rm() {
   local workspace
