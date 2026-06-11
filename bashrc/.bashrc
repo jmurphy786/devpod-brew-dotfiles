@@ -177,10 +177,9 @@ bind -x '"\C-g": __fzf_file_widget'
 
 eval "$(starship init bash)"
 
-adb kill-server 2>/dev/null
-adb -a nodaemon server start &>/dev/null &
 export TERM=xterm-256color
 
 [ -f ~/.secrets ] && source ~/.secrets
 [ -f ~/.bashrc.host ] && source ~/.bashrc.host
+echo "bashrc loaded" >> /tmp/shell-debug.log
 
