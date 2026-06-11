@@ -14,7 +14,6 @@ PACKAGES=(
     opencode
     ripgrep
     resvg
-    npm
     yazi
     fzf
     lazygit
