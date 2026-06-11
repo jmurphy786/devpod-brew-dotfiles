@@ -4,28 +4,18 @@
 # CORE CONFIGURATION (Always loaded)
 # ============================================================================
 
+[[ $- != *i* ]] && return
+
+# Auto-attach zellij before heavy init
+if [ -n "$REMOTE_CONTAINERS" ] || [ -f "/.dockerenv" ]; then
+  if command -v zellij &>/dev/null && [ -z "$ZELLIJ" ]; then
+    exec zellij attach --create
+  fi
+fi
+
 alias ls='ls --color=auto'
 alias ll='ls -lah'
 alias grep='grep --color=auto'
-
-tmux-kill() {
-  echo "Killing tmux server and cleaning nvim undo cache..."
-  tmux kill-server
-
-  # Clean up nvim undo files
-  local undo_dir="$HOME/.local/state/nvim/undo"
-  if [ -d "$undo_dir" ]; then
-    rm -rf "$undo_dir"/*
-    echo "✓ Cleared nvim undo cache: $undo_dir"
-  fi
-
-  # Alternative location (some systems use this)
-  local cache_undo="$HOME/.cache/nvim/undo"
-  if [ -d "$cache_undo" ]; then
-    rm -rf "$cache_undo"/*
-    echo "✓ Cleared nvim undo cache: $cache_undo"
-  fi
-}
 
 
 # ============================================================================
@@ -36,17 +26,12 @@ tmux-kill() {
 
 # Add Homebrew to PATH
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+export _ZO_DOCTOR=0
 export PATH="$HOME/bin:$PATH"
 export PATH="$HOME/.local/bin:$PATH"
-export PATH="$HOME/.tmuxifier/bin:$PATH"
 export PATH="$HOME/.local/share/nvim/mason/bin:$PATH"
 
-[ -f "$HOME/.bash_module_loader" ] && source "$HOME/.bash_module_loader"
-command -v tmuxifier &>/dev/null && eval "$(tmuxifier init -)"
 command -v zoxide &>/dev/null && eval "$(zoxide init --cmd cd bash)"
-
-alias tdev='tmuxifier load-session dev'
-alias tkill='tmux kill-server'
 
 # ===========================================================================
 # Scripts
@@ -142,6 +127,25 @@ dpod() {
   devpod ssh "$workspace"
 }
 
+dforward() {
+  local workspace ports port_args
+  devpod list --output plain &>/dev/null
+  workspace=$(devpod list --output plain 2>/dev/null | awk 'NR>1 {print $1}' | fzf --prompt="Forward ports for workspace: ")
+  [ -z "$workspace" ] && return
+
+  echo "Enter ports to forward (space separated, e.g: 6080 5000 6000 7000):"
+  read -r -a ports
+
+  port_args=()
+  for port in "${ports[@]}"; do
+    port_args+=(--forward-ports "$port:$port")
+  done
+
+  echo "Forwarding ports: ${ports[*]}"
+  echo "Ctrl+C to stop"
+  devpod ssh "$workspace" "${port_args[@]}"
+}
+
 # Delete a devpod workspace via fzf
 function dpod-rm() {
   local workspace
@@ -152,15 +156,14 @@ function dpod-rm() {
   fi
 }
 
+# Auto-attach or create zellij session in devcontainers
 # Bind Ctrl+G to the function
 bind -x '"\C-g": __fzf_file_widget'
 # ~/.bashrc
 
 eval "$(starship init bash)"
-
 export TERM=xterm-256color
 
 [ -f ~/.secrets ] && source ~/.secrets
 [ -f ~/.bashrc.host ] && source ~/.bashrc.host
-echo "bashrc loaded" >> /tmp/shell-debug.log
 
