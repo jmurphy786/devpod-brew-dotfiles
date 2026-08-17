@@ -4,15 +4,6 @@
 # CORE CONFIGURATION (Always loaded)
 # ============================================================================
 
-[[ $- != *i* ]] && return
-
-# Auto-attach zellij before heavy init
-if [ -n "$REMOTE_CONTAINERS" ] || [ -f "/.dockerenv" ]; then
-  if command -v zellij &>/dev/null && [ -z "$ZELLIJ" ]; then
-    exec zellij attach --create
-  fi
-fi
-
 alias ls='ls --color=auto'
 alias ll='ls -lah'
 alias grep='grep --color=auto'
@@ -61,7 +52,6 @@ elif [[ -f /usr/share/doc/fzf/examples/key-bindings.bash ]]; then
 elif command -v fzf &>/dev/null; then
   eval "$(fzf --bash)"
 fi
-
 
 
 # Use fd for fzf completion (respects .fdignore)
@@ -155,11 +145,6 @@ function dpod-rm() {
     [[ "$confirm" == [yY] ]] && devpod delete "$workspace"
   fi
 }
-
-# Auto-attach or create zellij session in devcontainers
-# Bind Ctrl+G to the function
-bind -x '"\C-g": __fzf_file_widget'
-# ~/.bashrc
 
 eval "$(starship init bash)"
 export TERM=xterm-256color
