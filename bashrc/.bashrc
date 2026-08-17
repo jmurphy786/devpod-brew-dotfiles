@@ -8,6 +8,9 @@ alias ls='ls --color=auto'
 alias ll='ls -lah'
 alias grep='grep --color=auto'
 
+# Keeps ctrl+g to find files / folders in current directory
+bind -x '"\C-g": __fzf_file_widget'
+
 
 # ============================================================================
 # PATH CONFIGURATION
