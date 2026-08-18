@@ -7,8 +7,6 @@
 alias ls='ls --color=auto'
 alias ll='ls -lah'
 alias grep='grep --color=auto'
-
-# Keeps ctrl+g to find files / folders in current directory
 bind -x '"\C-g": __fzf_file_widget'
 
 
@@ -147,6 +145,71 @@ function dpod-rm() {
     read -p "Delete '$workspace'? (y/N) " confirm
     [[ "$confirm" == [yY] ]] && devpod delete "$workspace"
   fi
+}
+
+# Shared: list zellij sessions sorted newest-first, tab-separated (sort_key <TAB> full_line)
+_zj_sessions_sorted() {
+  zellij list-sessions 2>/dev/null \
+    | sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g' \
+    | while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    local created secs=0
+    created=$(grep -oE 'Created [0-9dhms ]+ago' <<< "$line")
+    if [[ -n "$created" ]]; then
+      while read -r num unit; do
+        case "$unit" in
+          d) ((secs+=num*86400));;
+          h) ((secs+=num*3600));;
+          m) ((secs+=num*60));;
+          s) ((secs+=num));;
+        esac
+      done < <(grep -oE '[0-9]+[dhms]' <<< "$created" | sed -E 's/([0-9]+)([dhms])/\1 \2/')
+    fi
+    printf '%012d\t%s\n' "$secs" "$line"
+  done | sort -n -k1,1 | cut -f2-
+}
+
+# zj — fzf-pick a session (newest first) and attach/resurrect it
+zj() {
+  local sessions selected name
+  sessions=$(_zj_sessions_sorted)
+
+  if [[ -z "$sessions" ]]; then
+    echo "No zellij sessions found."
+    return 1
+  fi
+
+  selected=$(fzf --height=40% --layout=reverse \
+    --header='Attach to session (newest first)' <<< "$sessions")
+  [[ -z "$selected" ]] && return 0
+
+  name=$(awk '{print $1}' <<< "$selected")
+  zellij attach "$name"
+}
+
+# zj-del — fzf-pick session(s) (TAB to multi-select) and delete them
+zj-del() {
+  local sessions selected name
+  sessions=$(_zj_sessions_sorted)
+
+  if [[ -z "$sessions" ]]; then
+    echo "No zellij sessions found."
+    return 1
+  fi
+
+  selected=$(fzf --multi --height=40% --layout=reverse \
+    --header='Delete session(s) - TAB to multi-select' <<< "$sessions")
+  [[ -z "$selected" ]] && return 0
+
+  while IFS= read -r line; do
+    name=$(awk '{print $1}' <<< "$line")
+    if grep -q 'EXITED' <<< "$line"; then
+      zellij delete-session "$name" && echo "Deleted exited session: $name"
+    else
+      zellij kill-session "$name" && zellij delete-session "$name" \
+        && echo "Killed and deleted running session: $name"
+    fi
+  done <<< "$selected"
 }
 
 eval "$(starship init bash)"
