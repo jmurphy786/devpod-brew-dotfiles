@@ -9,11 +9,6 @@ alias ll='ls -lah'
 alias grep='grep --color=auto'
 bind -x '"\C-g": __fzf_file_widget'
 
-# Only start a new agent if none is already available (e.g. from DevPod forwarding)
-if [ -z "$SSH_AUTH_SOCK" ]; then
-    eval "$(ssh-agent -s)" > /dev/null
-fi
-
 # ============================================================================
 # PATH CONFIGURATION
 # ============================================================================
