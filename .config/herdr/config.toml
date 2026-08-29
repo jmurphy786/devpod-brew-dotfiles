@@ -1,0 +1,21 @@
+onboarding = false
+
+[theme]
+name="catpuccin"
+
+[keys]
+prefix = "ctrl+b"
+
+focus_pane_left = "ctrl+h"
+focus_pane_down = "ctrl+j"
+focus_pane_up = "ctrl+k"
+focus_pane_right = "ctrl+l"
+
+split_vertical = "prefix+%"
+split_horizontal = "prefix+,"
+
+new_tab = "prefix+c"
+
+toggle_sidebar = "prefix+p"
+
+

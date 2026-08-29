@@ -7,7 +7,8 @@ echo "?? Installing Homebrew packages..."
 PACKAGES=(
     stow
     zoxide
-    zellij
+    herdr
+    tuicr
     lazydocker
     starship
     claude-code
