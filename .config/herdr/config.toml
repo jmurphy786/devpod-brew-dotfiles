@@ -19,3 +19,17 @@ new_tab = "prefix+c"
 toggle_sidebar = "prefix+p"
 
 
+[[keys.command]]
+key = "prefix+w"
+type = "popup"
+command = "bash -ic wt-fzf"
+description = "worktree: open or create"
+width = "80%"
+height = "80%"
+
+[[keys.command]]
+key = "prefix+d"
+type = "pane"
+command = "bash -ic wt-fzf-remove"
+description = "worktree: remove"
+

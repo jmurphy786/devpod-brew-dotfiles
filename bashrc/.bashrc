@@ -146,147 +146,145 @@ function dpod-rm() {
   fi
 }
 
-# Shared: list zellij sessions sorted newest-first, tab-separated (sort_key <TAB> full_line)
-_zj_sessions_sorted() {
-  zellij list-sessions 2>/dev/null \
-    | sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g' \
-    | while IFS= read -r line; do
-    [[ -z "$line" ]] && continue
-    local created secs=0
-    created=$(grep -oE 'Created [0-9dhms ]+ago' <<< "$line")
-    if [[ -n "$created" ]]; then
-      while read -r num unit; do
-        case "$unit" in
-          d) ((secs+=num*86400));;
-          h) ((secs+=num*3600));;
-          m) ((secs+=num*60));;
-          s) ((secs+=num));;
-        esac
-      done < <(grep -oE '[0-9]+[dhms]' <<< "$created" | sed -E 's/([0-9]+)([dhms])/\1 \2/')
-    fi
-    printf '%012d\t%s\n' "$secs" "$line"
-  done | sort -n -k1,1 | cut -f2-
-}
-
-# zj — fzf-pick a session (newest first) and attach/resurrect it
-zj() {
-  local sessions selected name
-  sessions=$(_zj_sessions_sorted)
-
-  if [[ -z "$sessions" ]]; then
-    echo "No zellij sessions found."
-    return 1
-  fi
-
-  selected=$(fzf --height=40% --layout=reverse \
-    --header='Attach to session (newest first)' <<< "$sessions")
-  [[ -z "$selected" ]] && return 0
-
-  name=$(awk '{print $1}' <<< "$selected")
-  zellij attach "$name"
-}
-
-# zj-del — fzf-pick session(s) (TAB to multi-select) and delete them
-zj-del() {
-  local sessions selected name
-  sessions=$(_zj_sessions_sorted)
-
-  if [[ -z "$sessions" ]]; then
-    echo "No zellij sessions found."
-    return 1
-  fi
-
-  selected=$(fzf --multi --height=40% --layout=reverse \
-    --header='Delete session(s) - TAB to multi-select' <<< "$sessions")
-  [[ -z "$selected" ]] && return 0
-
-  while IFS= read -r line; do
-    name=$(awk '{print $1}' <<< "$line")
-    if grep -q 'EXITED' <<< "$line"; then
-      zellij delete-session "$name" && echo "Deleted exited session: $name"
-    else
-      zellij kill-session "$name" && zellij delete-session "$name" \
-        && echo "Killed and deleted running session: $name"
-    fi
-  done <<< "$selected"
-}
-
-# docker-outside-of-docker resolves bind-mount sources on the HOST, and .devcontainer.json's
-# remoteEnv exports HOST_PROJECT_PATH (the main checkout's host path) into every shell here. An
-# exported shell var always beats a same-named value in a directory's .env file, which is what
-# breaks per-worktree docker-compose mounts (see wt() below) -- so capture the original value into
-# the main checkout's own .env once, then stop exporting it, letting Compose's native per-directory
-# .env resolution do the rest.
-if [ -n "$HOST_PROJECT_PATH" ]; then
-  for _wt_root in /workspaces/*/; do
-    [ -d "${_wt_root}.git" ] || continue
-    if [ ! -f "${_wt_root}.env" ]; then
-      echo "HOST_PROJECT_PATH=$HOST_PROJECT_PATH" > "${_wt_root}.env"
-      _wt_gitdir=$(git -C "$_wt_root" rev-parse --absolute-git-dir 2>/dev/null)
-      [ -n "$_wt_gitdir" ] && { grep -qxF '/.env' "$_wt_gitdir/info/exclude" 2>/dev/null \
-        || echo '/.env' >> "$_wt_gitdir/info/exclude"; }
-      unset _wt_gitdir
-    fi
-    break
-  done
-  unset _wt_root
-  unset HOST_PROJECT_PATH
-fi
-
-# wt — create a git worktree for a branch, host-visible for docker-compose bind mounts
-wt() {
-  local branch main_root gitdir slug wt_path main_host_root
-
-  git rev-parse --git-dir >/dev/null 2>&1 || {
-    echo "Not inside a git repository" >&2
-    return 1
-  }
-
-  # Anchor on the main checkout: `git rev-parse --show-toplevel` would return the *worktree*
-  # root if wt is invoked from inside one.
-  main_root=$(git worktree list --porcelain | awk '/^worktree /{print $2; exit}')
-
-  branch=$(git -C "$main_root" branch --format='%(refname:short)' \
-    | fzf --prompt="Select branch for worktree > " --height=40% --reverse) || return 1
-
-  [ -z "$branch" ] && { echo "No branch selected" >&2; return 1; }
-
-  if git -C "$main_root" worktree list --porcelain | grep -q "branch refs/heads/$branch$"; then
-    echo "Branch '$branch' is already checked out in a worktree." >&2
-    git -C "$main_root" worktree list | grep "\[$branch\]"
-    return 1
-  fi
-
-  # Keep worktrees host-visible regardless of language/devcontainer: create them *inside* the
-  # main checkout's own tree instead of herdr's default ~/.herdr/worktrees (container-only).
-  # Every devcontainer bind-mounts its workspace folder from the host, so anything under
-  # main_root inherits that same mount.
-  slug="${branch//\//-}"
-  wt_path="$main_root/.worktrees/$slug"
-
-  herdr worktree create --cwd "$main_root" --branch "$branch" --path "$wt_path" || return 1
-
-  gitdir=$(git -C "$main_root" rev-parse --absolute-git-dir)
-  grep -qxF '/.worktrees/' "$gitdir/info/exclude" 2>/dev/null \
-    || echo '/.worktrees/' >> "$gitdir/info/exclude"
-  grep -qxF '/.env' "$gitdir/info/exclude" 2>/dev/null \
-    || echo '/.env' >> "$gitdir/info/exclude"
-
-  # Give this worktree its own .env pointing docker-compose (or anything else that reads
-  # HOST_PROJECT_PATH) at ITS host-visible path, derived from the main checkout's own .env. This
-  # works from any shell/pane whose cwd is this worktree -- no shell export to keep in sync.
-  main_host_root=$(sed -n 's/^HOST_PROJECT_PATH=//p' "$main_root/.env" 2>/dev/null)
-  if [ -n "$main_host_root" ]; then
-    echo "HOST_PROJECT_PATH=${main_host_root}${wt_path#$main_root}" > "$wt_path/.env"
-  fi
-
-  cd "$wt_path" || return 1
-}
-
 eval "$(starship init bash)"
 export TERM=xterm-256color
 
 [ -f ~/.secrets ] && source ~/.secrets
 [ -f ~/.bashrc.host ] && source ~/.bashrc.host
 
+wt-fzf() {
+  local wt_json main_root current_branch existing worktree_branches new_candidates fzf_list
+  local selection action branch slug wt_path result err
+
+  git rev-parse --git-dir >/dev/null 2>&1 || {
+    echo "Not inside a git repository" >&2
+    return 1
+  }
+
+  wt_json=$(herdr worktree list 2>/dev/null)
+  main_root=$(echo "$wt_json" | jq -r '.result.source.repo_root // empty')
+
+  if [ -z "$main_root" ]; then
+    echo "Could not resolve repo root via 'herdr worktree list' — got:" >&2
+    echo "$wt_json" >&2
+    read -rp "Press enter to close..." _
+    return 1
+  fi
+
+  current_branch=$(git -C "$main_root" rev-parse --abbrev-ref HEAD 2>/dev/null)
+
+  existing=$(echo "$wt_json" | jq -r '
+    .result.worktrees[]
+    | select(.is_linked_worktree == true)
+    | "open\t\(.branch)\t\(.path)"
+  ')
+
+  worktree_branches=$(echo "$wt_json" | jq -r '.result.worktrees[].branch')
+  new_candidates=$(git -C "$main_root" branch --format='%(refname:short)' \
+    | grep -vFx "$current_branch" \
+    | grep -vFxf <(echo "$worktree_branches") \
+    | while IFS= read -r b; do printf 'new\t%s\t\n' "$b"; done)
+
+  fzf_list=$(printf '%s\n%s\n' "$existing" "$new_candidates" | grep -v '^\s*$')
+
+  selection=$(printf '%s' "$fzf_list" \
+    | awk -F'\t' '{printf "%-6s %-40s %s\n", $1, $2, $3}' \
+    | fzf --prompt="Worktree > " \
+          --header="enter: open/create   type a name for a brand-new branch" \
+          --print-query \
+    | tail -n1)
+
+  action=$(echo "$selection" | awk '{print $1}')
+  branch=$(echo "$selection" | awk '{print $2}')
+
+  [ -z "$branch" ] && { echo "No selection" >&2; return 0; }
+
+  if [ "$action" = "open" ]; then
+    result=$(herdr worktree open --cwd "$main_root" --branch "$branch" --focus 2>&1)
+  else
+    slug="${branch//\//-}"
+    wt_path="$main_root/.worktrees/$slug"
+    result=$(herdr worktree create --cwd "$main_root" --branch "$branch" --path "$wt_path" --focus 2>&1)
+  fi
+
+  err=$(echo "$result" | jq -r '.error.message // empty' 2>/dev/null)
+  if [ -n "$err" ]; then
+    echo "herdr error: $err" >&2
+    echo "$result" >&2
+    read -rp "Press enter to close..." _
+    return 1
+  fi
+}
+
+wt-fzf-remove() {
+  local wt_json main_root list selection branch path open_id workspace_id result err confirm
+
+  git rev-parse --git-dir >/dev/null 2>&1 || {
+    echo "Not inside a git repository" >&2
+    return 1
+  }
+
+  wt_json=$(herdr worktree list 2>/dev/null)
+  main_root=$(echo "$wt_json" | jq -r '.result.source.repo_root // empty')
+
+  if [ -z "$main_root" ]; then
+    echo "Could not resolve repo root via 'herdr worktree list'" >&2
+    read -rp "Press enter to close..." _
+    return 1
+  fi
+
+  list=$(echo "$wt_json" | jq -r '
+    .result.worktrees[]
+    | select(.is_linked_worktree == true)
+    | "\(.branch)\t\(.path)\t\(.open_workspace_id // "")"
+  ')
+
+  if [ -z "$list" ]; then
+    echo "No worktrees to remove." >&2
+    read -rp "Press enter to close..." _
+    return 0
+  fi
+
+  selection=$(printf '%s' "$list" \
+    | awk -F'\t' '{status = ($3=="") ? "closed" : "open"; printf "%-40s %-8s %s\n", $1, status, $2}' \
+    | fzf --prompt="Remove worktree > " --header="enter: remove selected worktree")
+
+  [ -z "$selection" ] && { echo "No selection" >&2; return 0; }
+
+  branch=$(echo "$selection" | awk '{print $1}')
+  path=$(echo "$list" | awk -F'\t' -v b="$branch" '$1 == b {print $2}')
+  open_id=$(echo "$list" | awk -F'\t' -v b="$branch" '$1 == b {print $3}')
+
+  read -rp "Remove worktree for '$branch' at $path? [y/N] " confirm
+  case "$confirm" in
+    y|Y) ;;
+    *) echo "Cancelled" >&2; return 0 ;;
+  esac
+
+  # worktree remove needs an open workspace ID; if it's currently closed, open it
+  # (without focus) first, just to obtain the ID.
+  workspace_id="$open_id"
+  if [ -z "$workspace_id" ]; then
+    result=$(herdr worktree open --cwd "$main_root" --branch "$branch" --no-focus 2>&1)
+    workspace_id=$(echo "$result" | jq -r '.result.workspace.workspace_id // .result.workspace_id // empty' 2>/dev/null)
+    if [ -z "$workspace_id" ]; then
+      echo "Could not resolve a workspace for '$branch':" >&2
+      echo "$result" >&2
+      read -rp "Press enter to close..." _
+      return 1
+    fi
+  fi
+
+  result=$(herdr worktree remove --workspace "$workspace_id" --force 2>&1)
+  err=$(echo "$result" | jq -r '.error.message // empty' 2>/dev/null)
+  if [ -n "$err" ]; then
+    echo "herdr error: $err" >&2
+    echo "$result" >&2
+    read -rp "Press enter to close..." _
+    return 1
+  fi
+
+  echo "Removed worktree '$branch'."
+  read -rp "Press enter to close..." _
+}
 
