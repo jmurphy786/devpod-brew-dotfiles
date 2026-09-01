@@ -211,9 +211,82 @@ zj-del() {
   done <<< "$selected"
 }
 
+# docker-outside-of-docker resolves bind-mount sources on the HOST, and .devcontainer.json's
+# remoteEnv exports HOST_PROJECT_PATH (the main checkout's host path) into every shell here. An
+# exported shell var always beats a same-named value in a directory's .env file, which is what
+# breaks per-worktree docker-compose mounts (see wt() below) -- so capture the original value into
+# the main checkout's own .env once, then stop exporting it, letting Compose's native per-directory
+# .env resolution do the rest.
+if [ -n "$HOST_PROJECT_PATH" ]; then
+  for _wt_root in /workspaces/*/; do
+    [ -d "${_wt_root}.git" ] || continue
+    if [ ! -f "${_wt_root}.env" ]; then
+      echo "HOST_PROJECT_PATH=$HOST_PROJECT_PATH" > "${_wt_root}.env"
+      _wt_gitdir=$(git -C "$_wt_root" rev-parse --absolute-git-dir 2>/dev/null)
+      [ -n "$_wt_gitdir" ] && { grep -qxF '/.env' "$_wt_gitdir/info/exclude" 2>/dev/null \
+        || echo '/.env' >> "$_wt_gitdir/info/exclude"; }
+      unset _wt_gitdir
+    fi
+    break
+  done
+  unset _wt_root
+  unset HOST_PROJECT_PATH
+fi
+
+# wt — create a git worktree for a branch, host-visible for docker-compose bind mounts
+wt() {
+  local branch main_root gitdir slug wt_path main_host_root
+
+  git rev-parse --git-dir >/dev/null 2>&1 || {
+    echo "Not inside a git repository" >&2
+    return 1
+  }
+
+  # Anchor on the main checkout: `git rev-parse --show-toplevel` would return the *worktree*
+  # root if wt is invoked from inside one.
+  main_root=$(git worktree list --porcelain | awk '/^worktree /{print $2; exit}')
+
+  branch=$(git -C "$main_root" branch --format='%(refname:short)' \
+    | fzf --prompt="Select branch for worktree > " --height=40% --reverse) || return 1
+
+  [ -z "$branch" ] && { echo "No branch selected" >&2; return 1; }
+
+  if git -C "$main_root" worktree list --porcelain | grep -q "branch refs/heads/$branch$"; then
+    echo "Branch '$branch' is already checked out in a worktree." >&2
+    git -C "$main_root" worktree list | grep "\[$branch\]"
+    return 1
+  fi
+
+  # Keep worktrees host-visible regardless of language/devcontainer: create them *inside* the
+  # main checkout's own tree instead of herdr's default ~/.herdr/worktrees (container-only).
+  # Every devcontainer bind-mounts its workspace folder from the host, so anything under
+  # main_root inherits that same mount.
+  slug="${branch//\//-}"
+  wt_path="$main_root/.worktrees/$slug"
+
+  herdr worktree create --cwd "$main_root" --branch "$branch" --path "$wt_path" || return 1
+
+  gitdir=$(git -C "$main_root" rev-parse --absolute-git-dir)
+  grep -qxF '/.worktrees/' "$gitdir/info/exclude" 2>/dev/null \
+    || echo '/.worktrees/' >> "$gitdir/info/exclude"
+  grep -qxF '/.env' "$gitdir/info/exclude" 2>/dev/null \
+    || echo '/.env' >> "$gitdir/info/exclude"
+
+  # Give this worktree its own .env pointing docker-compose (or anything else that reads
+  # HOST_PROJECT_PATH) at ITS host-visible path, derived from the main checkout's own .env. This
+  # works from any shell/pane whose cwd is this worktree -- no shell export to keep in sync.
+  main_host_root=$(sed -n 's/^HOST_PROJECT_PATH=//p' "$main_root/.env" 2>/dev/null)
+  if [ -n "$main_host_root" ]; then
+    echo "HOST_PROJECT_PATH=${main_host_root}${wt_path#$main_root}" > "$wt_path/.env"
+  fi
+
+  cd "$wt_path" || return 1
+}
+
 eval "$(starship init bash)"
 export TERM=xterm-256color
 
 [ -f ~/.secrets ] && source ~/.secrets
 [ -f ~/.bashrc.host ] && source ~/.bashrc.host
+
 
