@@ -8,6 +8,8 @@ PACKAGES=(
     stow
     zoxide
     herdr
+    tmux
+    raine/workmux/workmux 
     tuicr
     lazydocker
     starship
