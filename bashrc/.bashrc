@@ -13,7 +13,17 @@ export LC_ALL=en_US.UTF-8
 # tmux fixes a client's UTF-8 mode at attach time from LC_ALL/LC_CTYPE/LANG.
 # `-u` forces UTF-8 output regardless, so a locale-less `docker exec` attach
 # can't strip Nerd Font glyphs into blank cells.
-alias tmux='tmux -u'
+# Bare `tmux` bootstraps the project's master workmux session (see
+# ~/.config/tmux/tmux-bootstrap.sh). Anything with arguments, or a call from
+# inside tmux, goes straight to real tmux. A function, not an alias, because
+# the two cannot coexist under one name -- the alias would always win.
+tmux() {
+  if [ $# -eq 0 ] && [ -z "${TMUX-}" ] && [ -x "$HOME/.config/tmux/tmux-bootstrap.sh" ]; then
+    "$HOME/.config/tmux/tmux-bootstrap.sh"
+  else
+    command tmux -u "$@"
+  fi
+}
 
 alias ls='ls --color=auto'
 alias ll='ls -lah'
@@ -182,54 +192,13 @@ _zj_sessions_sorted() {
   done | sort -n -k1,1 | cut -f2-
 }
 
-# zj — fzf-pick a session (newest first) and attach/resurrect it
-zj() {
-  local sessions selected name
-  sessions=$(_zj_sessions_sorted)
-
-  if [[ -z "$sessions" ]]; then
-    echo "No zellij sessions found."
-    return 1
-  fi
-
-  selected=$(fzf --height=40% --layout=reverse \
-    --header='Attach to session (newest first)' <<< "$sessions")
-  [[ -z "$selected" ]] && return 0
-
-  name=$(awk '{print $1}' <<< "$selected")
-  zellij attach "$name"
-}
-
-# zj-del — fzf-pick session(s) (TAB to multi-select) and delete them
-zj-del() {
-  local sessions selected name
-  sessions=$(_zj_sessions_sorted)
-
-  if [[ -z "$sessions" ]]; then
-    echo "No zellij sessions found."
-    return 1
-  fi
-
-  selected=$(fzf --multi --height=40% --layout=reverse \
-    --header='Delete session(s) - TAB to multi-select' <<< "$sessions")
-  [[ -z "$selected" ]] && return 0
-
-  while IFS= read -r line; do
-    name=$(awk '{print $1}' <<< "$line")
-    if grep -q 'EXITED' <<< "$line"; then
-      zellij delete-session "$name" && echo "Deleted exited session: $name"
-    else
-      zellij kill-session "$name" && zellij delete-session "$name" \
-        && echo "Killed and deleted running session: $name"
-    fi
-  done <<< "$selected"
-}
-
 eval "$(starship init bash)"
 export TERM=xterm-256color
 
 [ -f ~/.secrets ] && source ~/.secrets
 [ -f ~/.bashrc.host ] && source ~/.bashrc.host
+
+
 
 
 
