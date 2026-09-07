@@ -109,31 +109,34 @@ __fzf_file_widget() {
     fi
 }
 
-# SSH into a devpod workspace via fzf
 dpod() {
-  local workspace
-  workspace=$(devpod list --output plain 2>/dev/null | awk 'NR>1 {print $1}' | fzf --prompt="SSH into workspace: ")
-  [ -z "$workspace" ] && return
-  devpod ssh "$workspace"
-}
+  local workspace container status_output attempts
 
-dforward() {
-  local workspace ports port_args
-  devpod list --output plain &>/dev/null
-  workspace=$(devpod list --output plain 2>/dev/null | awk 'NR>1 {print $1}' | fzf --prompt="Forward ports for workspace: ")
+  workspace=$(devpod list --output plain 2>/dev/null | awk 'NR>1 {print $1}' | fzf --prompt="Exec into workspace: ")
   [ -z "$workspace" ] && return
 
-  echo "Enter ports to forward (space separated, e.g: 6080 5000 6000 7000):"
-  read -r -a ports
+  status_output=$(devpod status "$workspace" 2>/dev/null)
+  if ! echo "$status_output" | grep -qi running; then
+    echo "Workspace '$workspace' isn't running ($status_output) — starting it..."
+    devpod up "$workspace" || { echo "devpod up failed for '$workspace'"; return 1; }
+  fi
 
-  port_args=()
-  for port in "${ports[@]}"; do
-    port_args+=(--forward-ports "$port:$port")
+  # docker ps should reflect the new container immediately after `devpod up`
+  # returns, but give it a couple retries in case of any lag.
+  attempts=0
+  while [ -z "$container" ] && [ "$attempts" -lt 3 ]; do
+    container=$(docker ps --format '{{.ID}} {{.Image}}' | awk -v ws="$workspace" '$2 ~ ws {print $1; exit}')
+    [ -z "$container" ] && sleep 1
+    attempts=$((attempts + 1))
   done
 
-  echo "Forwarding ports: ${ports[*]}"
-  echo "Ctrl+C to stop"
-  devpod ssh "$workspace" "${port_args[@]}"
+  if [ -z "$container" ]; then
+    echo "Workspace '$workspace' is running but no container matched by image name."
+    echo "Check: docker ps -a | grep -i practitioner"
+    return 1
+  fi
+
+  docker exec -it -u vscode "$container" bash
 }
 
 # Delete a devpod workspace via fzf
@@ -146,145 +149,75 @@ function dpod-rm() {
   fi
 }
 
+# Shared: list zellij sessions sorted newest-first, tab-separated (sort_key <TAB> full_line)
+_zj_sessions_sorted() {
+  zellij list-sessions 2>/dev/null \
+    | sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g' \
+    | while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    local created secs=0
+    created=$(grep -oE 'Created [0-9dhms ]+ago' <<< "$line")
+    if [[ -n "$created" ]]; then
+      while read -r num unit; do
+        case "$unit" in
+          d) ((secs+=num*86400));;
+          h) ((secs+=num*3600));;
+          m) ((secs+=num*60));;
+          s) ((secs+=num));;
+        esac
+      done < <(grep -oE '[0-9]+[dhms]' <<< "$created" | sed -E 's/([0-9]+)([dhms])/\1 \2/')
+    fi
+    printf '%012d\t%s\n' "$secs" "$line"
+  done | sort -n -k1,1 | cut -f2-
+}
+
+# zj — fzf-pick a session (newest first) and attach/resurrect it
+zj() {
+  local sessions selected name
+  sessions=$(_zj_sessions_sorted)
+
+  if [[ -z "$sessions" ]]; then
+    echo "No zellij sessions found."
+    return 1
+  fi
+
+  selected=$(fzf --height=40% --layout=reverse \
+    --header='Attach to session (newest first)' <<< "$sessions")
+  [[ -z "$selected" ]] && return 0
+
+  name=$(awk '{print $1}' <<< "$selected")
+  zellij attach "$name"
+}
+
+# zj-del — fzf-pick session(s) (TAB to multi-select) and delete them
+zj-del() {
+  local sessions selected name
+  sessions=$(_zj_sessions_sorted)
+
+  if [[ -z "$sessions" ]]; then
+    echo "No zellij sessions found."
+    return 1
+  fi
+
+  selected=$(fzf --multi --height=40% --layout=reverse \
+    --header='Delete session(s) - TAB to multi-select' <<< "$sessions")
+  [[ -z "$selected" ]] && return 0
+
+  while IFS= read -r line; do
+    name=$(awk '{print $1}' <<< "$line")
+    if grep -q 'EXITED' <<< "$line"; then
+      zellij delete-session "$name" && echo "Deleted exited session: $name"
+    else
+      zellij kill-session "$name" && zellij delete-session "$name" \
+        && echo "Killed and deleted running session: $name"
+    fi
+  done <<< "$selected"
+}
+
 eval "$(starship init bash)"
 export TERM=xterm-256color
 
 [ -f ~/.secrets ] && source ~/.secrets
 [ -f ~/.bashrc.host ] && source ~/.bashrc.host
 
-wt-fzf() {
-  local wt_json main_root current_branch existing worktree_branches new_candidates fzf_list
-  local selection action branch slug wt_path result err
-
-  git rev-parse --git-dir >/dev/null 2>&1 || {
-    echo "Not inside a git repository" >&2
-    return 1
-  }
-
-  wt_json=$(herdr worktree list 2>/dev/null)
-  main_root=$(echo "$wt_json" | jq -r '.result.source.repo_root // empty')
-
-  if [ -z "$main_root" ]; then
-    echo "Could not resolve repo root via 'herdr worktree list' — got:" >&2
-    echo "$wt_json" >&2
-    read -rp "Press enter to close..." _
-    return 1
-  fi
-
-  current_branch=$(git -C "$main_root" rev-parse --abbrev-ref HEAD 2>/dev/null)
-
-  existing=$(echo "$wt_json" | jq -r '
-    .result.worktrees[]
-    | select(.is_linked_worktree == true)
-    | "open\t\(.branch)\t\(.path)"
-  ')
-
-  worktree_branches=$(echo "$wt_json" | jq -r '.result.worktrees[].branch')
-  new_candidates=$(git -C "$main_root" branch --format='%(refname:short)' \
-    | grep -vFx "$current_branch" \
-    | grep -vFxf <(echo "$worktree_branches") \
-    | while IFS= read -r b; do printf 'new\t%s\t\n' "$b"; done)
-
-  fzf_list=$(printf '%s\n%s\n' "$existing" "$new_candidates" | grep -v '^\s*$')
-
-  selection=$(printf '%s' "$fzf_list" \
-    | awk -F'\t' '{printf "%-6s %-40s %s\n", $1, $2, $3}' \
-    | fzf --prompt="Worktree > " \
-          --header="enter: open/create   type a name for a brand-new branch" \
-          --print-query \
-    | tail -n1)
-
-  action=$(echo "$selection" | awk '{print $1}')
-  branch=$(echo "$selection" | awk '{print $2}')
-
-  [ -z "$branch" ] && { echo "No selection" >&2; return 0; }
-
-  if [ "$action" = "open" ]; then
-    result=$(herdr worktree open --cwd "$main_root" --branch "$branch" --focus 2>&1)
-  else
-    slug="${branch//\//-}"
-    wt_path="$main_root/.worktrees/$slug"
-    result=$(herdr worktree create --cwd "$main_root" --branch "$branch" --path "$wt_path" --focus 2>&1)
-  fi
-
-  err=$(echo "$result" | jq -r '.error.message // empty' 2>/dev/null)
-  if [ -n "$err" ]; then
-    echo "herdr error: $err" >&2
-    echo "$result" >&2
-    read -rp "Press enter to close..." _
-    return 1
-  fi
-}
-
-wt-fzf-remove() {
-  local wt_json main_root list selection branch path open_id workspace_id result err confirm
-
-  git rev-parse --git-dir >/dev/null 2>&1 || {
-    echo "Not inside a git repository" >&2
-    return 1
-  }
-
-  wt_json=$(herdr worktree list 2>/dev/null)
-  main_root=$(echo "$wt_json" | jq -r '.result.source.repo_root // empty')
-
-  if [ -z "$main_root" ]; then
-    echo "Could not resolve repo root via 'herdr worktree list'" >&2
-    read -rp "Press enter to close..." _
-    return 1
-  fi
-
-  list=$(echo "$wt_json" | jq -r '
-    .result.worktrees[]
-    | select(.is_linked_worktree == true)
-    | "\(.branch)\t\(.path)\t\(.open_workspace_id // "")"
-  ')
-
-  if [ -z "$list" ]; then
-    echo "No worktrees to remove." >&2
-    read -rp "Press enter to close..." _
-    return 0
-  fi
-
-  selection=$(printf '%s' "$list" \
-    | awk -F'\t' '{status = ($3=="") ? "closed" : "open"; printf "%-40s %-8s %s\n", $1, status, $2}' \
-    | fzf --prompt="Remove worktree > " --header="enter: remove selected worktree")
-
-  [ -z "$selection" ] && { echo "No selection" >&2; return 0; }
-
-  branch=$(echo "$selection" | awk '{print $1}')
-  path=$(echo "$list" | awk -F'\t' -v b="$branch" '$1 == b {print $2}')
-  open_id=$(echo "$list" | awk -F'\t' -v b="$branch" '$1 == b {print $3}')
-
-  read -rp "Remove worktree for '$branch' at $path? [y/N] " confirm
-  case "$confirm" in
-    y|Y) ;;
-    *) echo "Cancelled" >&2; return 0 ;;
-  esac
-
-  # worktree remove needs an open workspace ID; if it's currently closed, open it
-  # (without focus) first, just to obtain the ID.
-  workspace_id="$open_id"
-  if [ -z "$workspace_id" ]; then
-    result=$(herdr worktree open --cwd "$main_root" --branch "$branch" --no-focus 2>&1)
-    workspace_id=$(echo "$result" | jq -r '.result.workspace.workspace_id // .result.workspace_id // empty' 2>/dev/null)
-    if [ -z "$workspace_id" ]; then
-      echo "Could not resolve a workspace for '$branch':" >&2
-      echo "$result" >&2
-      read -rp "Press enter to close..." _
-      return 1
-    fi
-  fi
-
-  result=$(herdr worktree remove --workspace "$workspace_id" --force 2>&1)
-  err=$(echo "$result" | jq -r '.error.message // empty' 2>/dev/null)
-  if [ -n "$err" ]; then
-    echo "herdr error: $err" >&2
-    echo "$result" >&2
-    read -rp "Press enter to close..." _
-    return 1
-  fi
-
-  echo "Removed worktree '$branch'."
-  read -rp "Press enter to close..." _
-}
 
