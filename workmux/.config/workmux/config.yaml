@@ -11,11 +11,15 @@ window_prefix: "{project} 󰘬 "
 
 # default window layout
 windows:
-  - name: editor
+  - name: dev 
     panes:
       - command: nvim
         focus: true
-  - name: server
+  - name: runner 
+  - name: git
+    panes:
+       - command: lazygit
+         focus: true 
   - name: agent
     panes:
       - command: claude 
