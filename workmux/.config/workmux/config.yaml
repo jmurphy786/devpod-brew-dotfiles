@@ -1,0 +1,22 @@
+# each worktree opens as a seperate session as opposed to windows
+mode: session
+# don't add dagent icons to tmux windows
+status_format: false
+# enable nerd fonts, duh
+nerdfont: true
+# default agent
+agent: claude 
+
+window_prefix: "{project} 󰘬 "
+
+# default window layout
+windows:
+  - name: editor
+    panes:
+      - command: nvim
+        focus: true
+  - name: server
+  - name: agent
+    panes:
+      - command: claude 
+
