@@ -4,6 +4,17 @@
 # CORE CONFIGURATION (Always loaded)
 # ============================================================================
 
+# Locale -- must be UTF-8 or tmux drops to non-UTF-8 mode and mangles
+# multi-byte glyphs (Nerd Font icons in nvim, box-drawing chars, etc.).
+# Dev containers bypass PAM, so /etc/default/locale is never applied.
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
+# tmux fixes a client's UTF-8 mode at attach time from LC_ALL/LC_CTYPE/LANG.
+# `-u` forces UTF-8 output regardless, so a locale-less `docker exec` attach
+# can't strip Nerd Font glyphs into blank cells.
+alias tmux='tmux -u'
+
 alias ls='ls --color=auto'
 alias ll='ls -lah'
 alias grep='grep --color=auto'
@@ -219,5 +230,6 @@ export TERM=xterm-256color
 
 [ -f ~/.secrets ] && source ~/.secrets
 [ -f ~/.bashrc.host ] && source ~/.bashrc.host
+
 
 
