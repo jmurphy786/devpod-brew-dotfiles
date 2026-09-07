@@ -1,57 +1,36 @@
 return {
-	{
-		"hrsh7th/cmp-nvim-lsp",
-	},
-	{
-		"hrsh7th/cmp-buffer",
-	},
-	{
-		"hrsh7th/cmp-path",
-	},
-	{
-		"L3MON4D3/LuaSnip",
-		dependencies = {
-			"saadparwaiz1/cmp_luasnip",
-			"rafamadriz/friendly-snippets",
-		},
-	},
-	{
-		"hrsh7th/nvim-cmp",
-		config = function()
-			local cmp = require("cmp")
-			require("luasnip.loaders.from_vscode").lazy_load()
-			cmp.setup({
-				snippet = {
-					expand = function(args)
-						require("luasnip").lsp_expand(args.body)
-					end,
-				},
-				window = {
-					completion = cmp.config.window.bordered(),
-					documentation = cmp.config.window.bordered(),
-				},
-				mapping = cmp.mapping.preset.insert({
-					["<C-b>"] = cmp.mapping.scroll_docs(-4),
-					["<C-f>"] = cmp.mapping.scroll_docs(4),
-					["<C-Space>"] = cmp.mapping.complete(),
-					["<C-e>"] = cmp.mapping.abort(),
-					["<CR>"] = cmp.mapping.confirm({ select = true }),
-				}),
-				sources = cmp.config.sources({
-					{
-						name = "nvim_lsp",
-						option = {
-							markdown_oxide = {
-								keyword_pattern = [[\(\k\| \|\/\|#\)\+]]
-							}
-						}
-					},
-					{ name = "luasnip" },
-					{ name = "path" },
-				}, {
-					{ name = "buffer" },
-				}),
-			})
-		end,
-	},
+  {
+    "L3MON4D3/LuaSnip",
+    dependencies = { "rafamadriz/friendly-snippets" },
+    config = function()
+      require("luasnip.loaders.from_vscode").lazy_load()
+    end,
+  },
+  {
+    "saghen/blink.cmp",
+    version = "1.*", -- release tag = prebuilt fuzzy matcher, no cargo needed
+    event = "InsertEnter",
+    dependencies = { "L3MON4D3/LuaSnip" },
+    ---@module 'blink.cmp'
+    opts = {
+      snippets = { preset = "luasnip" },
+      keymap = {
+        -- <C-space> open, <C-n>/<C-p> select, <C-e> hide, <C-y> accept
+        preset = "default",
+        -- Enter accepts only when an item is explicitly selected (see
+        -- list.selection.preselect below); with nothing selected `accept` is a
+        -- no-op and this falls through to a plain newline / list continuation.
+        ["<CR>"] = { "accept", "fallback" },
+        ["<C-b>"] = { "scroll_documentation_up", "fallback" },
+        ["<C-f>"] = { "scroll_documentation_down", "fallback" },
+      },
+      completion = {
+        list = { selection = { preselect = false } },
+        documentation = { auto_show = true },
+        menu = { border = "rounded" },
+      },
+      sources = { default = { "lsp", "path", "snippets", "buffer" } },
+      fuzzy = { implementation = "prefer_rust_with_warning" },
+    },
+  },
 }
