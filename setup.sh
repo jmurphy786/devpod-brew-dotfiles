@@ -11,9 +11,9 @@ fi
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 echo "Installing Homebrew packages..."
 PACKAGES=(
-    stow zoxide herdr tmux raine/workmux/workmux tuicr
-    lazydocker starship claude-code opencode ripgrep resvg
-    yazi fzf lazygit
+    stow zoxide tmux raine/workmux/workmux tuicr
+    lazydocker starship claude-code opencode ripgrep resvg file
+    yazi fzf lazygit gh
 )
 for package in "${PACKAGES[@]}"; do
     if brew list "$package" &>/dev/null; then
