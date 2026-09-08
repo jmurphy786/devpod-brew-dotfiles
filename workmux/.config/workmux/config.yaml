@@ -1,7 +1,7 @@
 # each worktree opens as a seperate session as opposed to windows
 mode: session
 # don't add dagent icons to tmux windows
-status_format: false
+status_format: true 
 # enable nerd fonts, duh
 nerdfont: true
 # default agent
@@ -15,12 +15,42 @@ windows:
     panes:
       - command: nvim
         focus: true
- - name: runner 
- - name: agent
+  - name: runner 
+  - name: git
+    panes:
+       - command: lazygit
+         focus: true 
+  - name: agent
     panes:
       - command: claude 
 
 
 # create worktrees inside the repo so they survive dev container teardown
 worktree_dir: .worktrees
+
+status_icons:
+  working: "🤖" # Agent is processing
+  sleeping: "🥱"
+  waiting: "💬" # Agent needs input (auto-clears on focus)
+  done: "✅" # Agent finished (auto-clears on focus)
+
+sidebar:
+  layout: horizontal 
+  templates:
+   # Compact mode: a single line per agent.
+    compact: "{status_icon} {primary} {pane_suffix} {fill} {elapsed}"
+
+    # Tile mode: one string per visual line in the tile body.
+    tiles:
+      - "{primary} {pane_suffix} {fill} {elapsed}"
+      - "{secondary} {fill} {git_stats}"
+      - "{pane_title} {fill} {pr_checks}"
+
+    # Horizontal mode: one string per visual line in each top bar chip.
+    horizontal:
+      - "{status_icon} {primary} {pane_suffix} {fill} {elapsed}"
+      - "{secondary} {fill} {git_stats}"
+      - "{pane_title} {fill} {pr_checks}"
+
+
 
