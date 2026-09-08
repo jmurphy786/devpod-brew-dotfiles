@@ -15,12 +15,12 @@ windows:
     panes:
       - command: nvim
         focus: true
-  - name: runner 
-  - name: git
-    panes:
-       - command: lazygit
-         focus: true 
-  - name: agent
+ - name: runner 
+ - name: agent
     panes:
       - command: claude 
+
+
+# create worktrees inside the repo so they survive dev container teardown
+worktree_dir: .worktrees
 
