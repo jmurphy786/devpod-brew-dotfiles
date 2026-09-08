@@ -13,7 +13,7 @@ echo "Installing Homebrew packages..."
 PACKAGES=(
     stow zoxide tmux raine/workmux/workmux tuicr
     lazydocker starship claude-code opencode ripgrep resvg file
-    yazi fzf lazygit gh
+    yazi fzf lazygit 
 )
 for package in "${PACKAGES[@]}"; do
     if brew list "$package" &>/dev/null; then
