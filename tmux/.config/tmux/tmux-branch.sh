@@ -22,9 +22,14 @@ branch=$(git -C "$dir" rev-parse --abbrev-ref HEAD 2>/dev/null) || exit 0
 git_dir=$(git -C "$dir" rev-parse --path-format=absolute --git-dir 2>/dev/null)
 common_dir=$(git -C "$dir" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
 
+# Keep the status block a fixed, readable width; the ticket prefix is the part
+# that identifies a worktree.
+[ ${#branch} -gt 15 ] && branch="${branch:0:15}…"
+
 if [ -n "$git_dir" ] && [ "$git_dir" = "$common_dir" ]; then
   printf ' %s\n' "$branch"
 else
   printf '󰘬 %s\n' "$branch"
 fi
+
 
