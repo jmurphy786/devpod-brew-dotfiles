@@ -35,7 +35,7 @@ status_icons:
   done: "✅" # Agent finished (auto-clears on focus)
 
 sidebar:
-  layout: horizontal 
+  layout: tiles
   templates:
    # Compact mode: a single line per agent.
     compact: "{status_icon} {primary} {pane_suffix} {fill} {elapsed}"
@@ -43,14 +43,19 @@ sidebar:
     # Tile mode: one string per visual line in the tile body.
     tiles:
       - "{primary} {pane_suffix} {fill} {elapsed}"
-      - "{secondary} {fill} {git_stats}"
+      - "{git_branch} {fill} {git_stats}"
       - "{pane_title} {fill} {pr_checks}"
 
     # Horizontal mode: one string per visual line in each top bar chip.
     horizontal:
       - "{status_icon} {primary} {pane_suffix} {fill} {elapsed}"
-      - "{secondary} {fill} {git_stats}"
+      - "{git_branch} {fill} {git_stats}"
       - "{pane_title} {fill} {pr_checks}"
 
 
+# the selection highlight follows the sidebar's own window; windows without an
+# agent pane fall back to the first row, which is often another worktree's agent
+theme:
+  custom:
+    highlight_row_bg: reset
 
