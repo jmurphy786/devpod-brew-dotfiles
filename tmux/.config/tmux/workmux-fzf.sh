@@ -32,15 +32,35 @@ wm_worktrees() {
 rows=$(wm_worktrees)
 [ -z "$rows" ] && wm_die "No worktrees to $cmd."
 
-# Column 1 is the handle -- the identifier open/remove/close document. It is the
-# branch slugified (PTL-5-Foo -> ptl-5-foo), so the two differ and the branch is
-# shown for readability only.
-selection=$(printf '%s\n' "$rows" \
-            | column -t -s $'\t' \
-            | fzf --prompt "$cmd> " --height 100% --border none \
-                  --header "workmux $cmd   (* = uncommitted changes, live = tmux target running)")
-[ -z "$selection" ] && exit 0
-handle=$(printf '%s' "$selection" | awk '{print $1}')
+# open/remove/close all act on the handle, which is the branch slugified
+# (PTL-5-Foo -> ptl-5-foo), so the two differ and the handle is what must reach
+# workmux either way. How it is carried differs by command.
+if [ "$cmd" = "open" ]; then
+  # Navigation only: show branch, what it is serving, and whether it is live.
+  # The handle rides along as a hidden trailing field -- fzf prints the whole
+  # input line even when --with-nth narrows what is displayed and searched.
+  # Searching is therefore limited to the branch, which is not a loss: it
+  # carries the same ticket id as the handle and fzf matches case-insensitively.
+  selection=$(printf '%s\n' "$rows" \
+              | wm_status_column \
+              | wm_open_display \
+              | fzf --delimiter=$'\t' --with-nth=1 \
+                    --prompt "$cmd> " --height 100% --border none \
+                    --header "workmux $cmd   (:port/run = serving)")
+  [ -z "$selection" ] && exit 0
+  handle=$(printf '%s' "$selection" | cut -f2)
+else
+  # Destructive: keep the full row. The dirty marker and the path are exactly
+  # what you want in front of you before removing a worktree. Column 1 is the
+  # handle.
+  selection=$(printf '%s\n' "$rows" \
+              | wm_status_column \
+              | column -t -s $'\t' \
+              | fzf --prompt "$cmd> " --height 100% --border none \
+                    --header "workmux $cmd   (* = uncommitted changes, live = tmux target running, :port/run = serving)")
+  [ -z "$selection" ] && exit 0
+  handle=$(printf '%s' "$selection" | awk '{print $1}')
+fi
 [ -z "$handle" ] && wm_die "Could not read a worktree handle from the selection."
 
 # Never destroy the session/window we are standing in.
@@ -96,6 +116,7 @@ if [ $status -ne 0 ]; then
   wm_hold "workmux $cmd '$handle' failed (exit $status)."
   exit $status
 fi
+
 
 
 
