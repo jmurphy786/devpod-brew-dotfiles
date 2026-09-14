@@ -31,6 +31,8 @@ if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
   git clone https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
 fi
 
+gh extension install github/gh-stack
+
 cd "$SCRIPT_DIR"
 stow --target="$HOME" */
 

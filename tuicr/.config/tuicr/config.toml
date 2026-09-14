@@ -1,2 +1,34 @@
 theme = "catppuccin-mocha"
 diff_view = "side-by-side"   # or "unified"
+
+[[comment_types]]
+id = "todo"
+color = "cyan"
+definition = "Something that needs doing, often deferred"
+
+[[comment_types]]
+id = "question"
+color = "yellow"
+definition = "Seeking clarification"
+
+[[comment_types]]
+id = "discussion"
+color = "magenta"
+definition = "Open-ended, no clear resolution needed yet"
+
+[[comment_types]]
+id = "issue"
+color = "red"
+definition = "Must fix before merge"
+
+[[comment_types]]
+id = "suggestion"
+color = "blue"
+definition = "Concrete proposed change"
+
+[[comment_types]]
+id = "nitpick"
+color = "dark_gray"
+definition = "Minor, non-blocking style or preference"
+
+
