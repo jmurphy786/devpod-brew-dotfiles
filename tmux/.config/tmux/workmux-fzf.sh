@@ -48,9 +48,18 @@ if [ "$cmd" = "remove" ] || [ "$cmd" = "close" ]; then
   wm_leave_target_session "$handle" "$session"
 fi
 
-echo "workmux $cmd $handle"
-echo
-workmux "$cmd" "$handle"
+# `remove` gets -k: tear down the worktree and tmux target but leave the local
+# branch alone (local branches get pruned by hand in lazygit). The remote branch
+# is never touched by `workmux remove` either way.
+if [ "$cmd" = "remove" ]; then
+  echo "workmux remove -k $handle"
+  echo
+  workmux remove -k "$handle"
+else
+  echo "workmux $cmd $handle"
+  echo
+  workmux "$cmd" "$handle"
+fi
 status=$?
 
 if [ "$cmd" = "remove" ]; then
@@ -65,11 +74,11 @@ if [ "$cmd" = "remove" ]; then
     else
       echo "'$handle' still exists after workmux remove."
     fi
-    printf "Force remove '%s' (discards uncommitted changes and the branch)? [y/N] " "$handle"
+    printf "Force remove '%s' (discards uncommitted changes; keeps the branch)? [y/N] " "$handle"
     read -r reply || reply=""
     case "${reply-}" in
       y|Y)
-        workmux remove -f "$handle"
+        workmux remove -f -k "$handle"
         status=$?
         ;;
       *)
@@ -87,6 +96,7 @@ if [ $status -ne 0 ]; then
   wm_hold "workmux $cmd '$handle' failed (exit $status)."
   exit $status
 fi
+
 
 
 
