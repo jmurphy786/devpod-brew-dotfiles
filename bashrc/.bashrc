@@ -43,6 +43,10 @@ export PATH="$HOME/bin:$PATH"
 export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/.local/share/nvim/mason/bin:$PATH"
 
+# Android SDK — the devcontainer feature bakes a PATH with an unresolved
+# $ANDROID_HOME, and remoteEnv doesn't reach tmux-spawned shells.
+[ -n "$ANDROID_HOME" ] && export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin"
+
 command -v zoxide &>/dev/null && eval "$(zoxide init --cmd cd bash)"
 
 # ===========================================================================
@@ -170,33 +174,12 @@ function dpod-rm() {
   fi
 }
 
-# Shared: list zellij sessions sorted newest-first, tab-separated (sort_key <TAB> full_line)
-_zj_sessions_sorted() {
-  zellij list-sessions 2>/dev/null \
-    | sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g' \
-    | while IFS= read -r line; do
-    [[ -z "$line" ]] && continue
-    local created secs=0
-    created=$(grep -oE 'Created [0-9dhms ]+ago' <<< "$line")
-    if [[ -n "$created" ]]; then
-      while read -r num unit; do
-        case "$unit" in
-          d) ((secs+=num*86400));;
-          h) ((secs+=num*3600));;
-          m) ((secs+=num*60));;
-          s) ((secs+=num));;
-        esac
-      done < <(grep -oE '[0-9]+[dhms]' <<< "$created" | sed -E 's/([0-9]+)([dhms])/\1 \2/')
-    fi
-    printf '%012d\t%s\n' "$secs" "$line"
-  done | sort -n -k1,1 | cut -f2-
-}
-
 eval "$(starship init bash)"
 export TERM=xterm-256color
 
 [ -f ~/.secrets ] && source ~/.secrets
 [ -f ~/.bashrc.host ] && source ~/.bashrc.host
+
 
 
 

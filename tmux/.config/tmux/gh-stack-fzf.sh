@@ -153,6 +153,7 @@ menu() {
 v	view	show the stack and its PR status
 m	modify	reorder, fold, drop or rename layers
 s	submit	push branches and create or update the PRs
+p	push	push the stack's branches, without touching the PRs
 y	sync	fetch, cascade-rebase, push, refresh PR state
 c	checkout	open another stack (local, or pulled from GitHub)
 a	add	add a layer, starting the stack if there isn't one
@@ -172,7 +173,7 @@ ROWS
   out=$(printf '%s\n' "$rows" \
         | column -t -s $'\t' \
         | fzf --prompt 'stack> ' --height 100% --border none \
-              --expect=v,m,s,y,c,a \
+              --expect=v,m,s,p,y,c,a \
               --header "gh stack   ${branch}   $(basename "$PWD")")
   [ -z "$out" ] && return 0
 
@@ -293,4 +294,5 @@ Run this by hand with the base you want:  gh stack init --base <branch> $branch"
     wm_die "Unknown action '$action'."
     ;;
 esac
+
 

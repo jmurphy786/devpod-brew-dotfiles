@@ -258,8 +258,30 @@ wm_land_safely() {
   return 0
 }
 
+# wm_stack_map -- TSV of "branch <TAB> i/n" for every branch in every stack
+# known to this repository.
+#
+# gh-stack keeps state at $(git rev-parse --git-dir)/gh-stack, which for a
+# linked worktree is .git/worktrees/<name>/gh-stack -- one file per worktree
+# that owns a stack (github/gh-stack#459). Reading them all and keying by branch
+# means the picker can describe every worktree from wherever it was opened.
+#
+# ~2ms: cost scales with the number of stacks, not worktrees, and it makes no
+# git calls beyond locating the common dir.
+wm_stack_map() {
+  local common f
+  common=$(git rev-parse --git-common-dir 2>/dev/null) || return 0
+  for f in "$common"/gh-stack "$common"/worktrees/*/gh-stack; do
+    [ -f "$f" ] || continue
+    jq -r '.stacks[]
+           | [.branches[].branch] as $bs
+           | range(0; ($bs | length)) as $i
+           | "\($bs[$i])\t\($i + 1)/\($bs | length)"' "$f" 2>/dev/null
+  done | sort -u
+}
+
 # wm_rows <include_main> -- TSV rows for the fzf pickers:
-#   handle \t dirty(* or blank) \t live|closed \t branch \t mode \t path
+#   handle \t dirty(* or blank) \t live|closed \t stack(i/n or -) \t branch \t mode \t path
 #
 # Everything here comes straight from git and tmux (~15ms) instead of from
 # `workmux list --json` (~700ms), which computes far more than the picker needs.
@@ -273,7 +295,7 @@ wm_rows() {
   main_handle=$(wm_main_handle)
   prefix=$(_wm_prefix)
 
-  local -A modes=() live=()
+  local -A modes=() live=() stacked=()
   local key val name
   while read -r key val; do
     key=${key#workmux.worktree.}
@@ -283,6 +305,10 @@ wm_rows() {
     [ -n "$name" ] && live["$name"]=1
   done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null
            tmux list-windows -a -F '#{window_name}' 2>/dev/null)
+  local sb sp
+  while IFS=$'\t' read -r sb sp; do
+    [ -n "$sb" ] && stacked["$sb"]="$sp"
+  done < <(wm_stack_map)
 
   local path= branch= handle mode dirty state main_row= n=0
   local -a rest=()
@@ -298,16 +324,19 @@ wm_rows() {
     if [ -n "${live[$handle]:-}" ] || [ -n "${live[${prefix}${handle}]:-}" ]; then
       state=live
     fi
+    # "2/3" = this worktree holds a three-layer stack and is currently on layer
+    # two; "-" = not a stack. The branch column already says which layer.
+    local stack="${stacked[$branch]:--}"
     # n counts parsed records, not printed ones: a repo whose only worktree is
     # the main one is a successful empty listing, not a parse failure.
     n=$((n + 1))
     if [ "$handle" = "$main_handle" ]; then
       [ "$include_main" = true ] || { path=; branch=; return 0; }
-      main_row=$(printf '%s\t%s\t%s\t%s\t%s\t%s' \
-                        "$handle" "$dirty" "$state" "$branch" "$mode" "$path")
+      main_row=$(printf '%s\t%s\t%s\t%s\t%s\t%s\t%s' \
+                        "$handle" "$dirty" "$state" "$stack" "$branch" "$mode" "$path")
     else
-      rest+=("$(printf '%s\t%s\t%s\t%s\t%s\t%s' \
-                       "$handle" "$dirty" "$state" "$branch" "$mode" "$path")")
+      rest+=("$(printf '%s\t%s\t%s\t%s\t%s\t%s\t%s' \
+                       "$handle" "$dirty" "$state" "$stack" "$branch" "$mode" "$path")")
     fi
     path=; branch=
   }
@@ -337,9 +366,11 @@ wm_rows_slow() {
     | [ .handle,
         (if .has_uncommitted_changes then "*" else " " end),
         (if .is_open then "live" else "closed" end),
+        "?",
         .branch,
         .mode,
         .path ] | @tsv'
 }
+
 
 
