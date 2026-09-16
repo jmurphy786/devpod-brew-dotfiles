@@ -37,7 +37,7 @@ rows=$(wm_worktrees)
 # shown for readability only.
 selection=$(printf '%s\n' "$rows" \
             | column -t -s $'\t' \
-            | fzf --prompt "$cmd> " --height 100% --border none \
+            | fzf --prompt "$cmd> " --height 100% --border none --no-preview \
                   --header "workmux $cmd   (* = uncommitted, live = tmux running, 2/3 = layer in stack)")
 [ -z "$selection" ] && exit 0
 handle=$(printf '%s' "$selection" | awk '{print $1}')
@@ -96,6 +96,7 @@ if [ $status -ne 0 ]; then
   wm_hold "workmux $cmd '$handle' failed (exit $status)."
   exit $status
 fi
+
 
 
 

@@ -280,6 +280,30 @@ wm_stack_map() {
   done | sort -u
 }
 
+# wm_stack_index <gitdir> <branch> -- "2/3" if <branch> is a layer of the stack
+# tracked in <gitdir>, empty otherwise.
+#
+# Same source as wm_stack_map, but reads only the one worktree's file: this is
+# called from the status bar on every redraw, so it must not scan the repo. No
+# network either -- `gh stack view --json` would put an API round-trip in front
+# of every status refresh.
+#
+# Takes the git dir rather than a work tree because the caller has already asked
+# git for it, and at one status tick per second a second `rev-parse` fork for
+# the same answer is the expensive part of the whole lookup.
+wm_stack_index() {
+  local gitdir="$1" branch="$2"
+  [ -n "$branch" ] || return 0
+  [ -n "$gitdir" ] || return 0
+  [ -f "$gitdir/gh-stack" ] || return 0
+  jq -r --arg b "$branch" '
+    .stacks[]
+    | [.branches[].branch] as $bs
+    | ($bs | index($b)) as $i
+    | select($i != null)
+    | "\($i + 1)/\($bs | length)"' "$gitdir/gh-stack" 2>/dev/null | head -1
+}
+
 # wm_rows <include_main> -- TSV rows for the fzf pickers:
 #   handle \t dirty(* or blank) \t live|closed \t stack(i/n or -) \t branch \t mode \t path
 #

@@ -66,7 +66,7 @@ rows=$(
 
 selection=$(printf '%s\n' "$rows" \
             | column -t -s $'\t' \
-            | fzf --prompt 'branch> ' --height 100% --border none \
+            | fzf --prompt 'branch> ' --height 100% --border none --no-preview \
                   --header "worktree from branch / remote / PR  ($(basename "$PWD"))")
 [ -z "$selection" ] && exit 0
 
@@ -85,4 +85,5 @@ if ! "$@"; then
   wm_hold "'$*' failed."
   exit 1
 fi
+
 

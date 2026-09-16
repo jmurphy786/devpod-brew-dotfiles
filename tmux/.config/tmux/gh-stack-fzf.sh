@@ -3,11 +3,11 @@
 #
 # Usage: gh-stack-fzf.sh [action]
 #
-# With no argument an fzf menu of actions is shown. The menu is the whole point
-# of this script -- gh stack already ships good interactive pickers for choosing
-# a stack (`checkout`) and a layer (`switch`), so those are handed straight to
-# gh rather than rebuilt here. fzf supplies the one thing gh has no equivalent
-# for: fuzzy access to sixteen subcommands without remembering their names.
+# Normally called with an action by the prefix+S display-menu, which is what
+# chooses the popup size for that action -- a popup cannot resize itself once it
+# is open. With no argument an fzf menu of the same actions is shown instead,
+# for running this from a shell. Either way gh stack's own interactive pickers
+# (`checkout`, `switch`) are handed straight to gh rather than rebuilt here.
 #
 # Unlike the workmux popups this does NOT cd to the repo root. A stack lives
 # inside one worktree and every gh stack command is relative to the branch
@@ -80,26 +80,11 @@ fork_point() {
     | sed 's#^refs/heads/##'
 }
 
-# gh-stack keeps tracking JSON next to the git dir. In a linked worktree
-# --git-dir is .git/worktrees/<name>, which is where it landed here, but check
-# the common dir too rather than assume.
-stack_state() {
-  local d
-  for d in "$(git rev-parse --git-dir)" \
-           "$(git rev-parse --path-format=absolute --git-common-dir)"; do
-    [ -f "$d/gh-stack" ] && { printf '%s\n' "$d/gh-stack"; return 0; }
-  done
-  return 1
-}
-
-# The trunk of whichever stack holds the current branch.
+# The trunk of the stack holding the current branch. `gh stack view --json` is
+# gh-stack's own machine-readable view of the stack, so nothing here depends on
+# the layout of its private tracking file. Empty when there is no stack.
 stack_trunk() {
-  local state branch
-  state=$(stack_state) || return 1
-  branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null) || return 1
-  jq -r --arg b "$branch" \
-     '.stacks[] | select(any(.branches[]; .branch == $b)) | .trunk.branch' \
-     "$state" 2>/dev/null | head -1
+  gh stack view --json 2>/dev/null | jq -r '.trunk // empty'
 }
 
 # Run a gh stack command in the popup, holding it open if it fails so the error
@@ -114,10 +99,51 @@ run() {
   return 0
 }
 
-# Same, but hold the popup open on success too -- for commands whose output is
-# the point and which would otherwise flash past.
+# Same, but hold the popup open on success too. Only sync and push use this:
+# their output is a summary of what moved, and it is worth reading. Everything
+# else closes the moment it returns -- a hold after a TUI you have already quit
+# is just a second keypress.
 run_and_show() {
   run "$@" && wm_hold ""
+}
+
+# A branch change made in the popup (view, switch, checkout, up/down) leaves the
+# already-drawn starship prompts showing the old branch: a prompt on screen is a
+# snapshot of when it was drawn, and nothing redraws it until the shell issues
+# the next one.
+#
+# So make it issue one. C-l is no use here -- it is readline's clear-screen,
+# which repaints the prompt string readline already holds without returning to
+# bash's main loop, so PROMPT_COMMAND (starship_precmd) never runs and the branch
+# never changes. That is why clearing by hand worked and C-l did not. An empty
+# Enter does return to the main loop. C-u goes first so a half-typed command line
+# is discarded rather than executed; readline keeps it in the kill ring, so C-y
+# gets it back.
+#
+# Every pane in the session needs it, not just the active one -- each holds its
+# own drawn prompt. The session cannot be passed in as an argument, because
+# display-popup -E does not expand #{...} in the command string; that is why
+# wm_calling_session asks tmux for the active client instead, which inside a
+# popup is still the client the popup was opened over.
+#
+# Only panes sitting at a shell, and strictly so: an Enter sent into nvim,
+# lazygit or a running claude would be a real keystroke in that program. None of
+# them show a branch in a prompt anyway.
+current_branch() {
+  git symbolic-ref --quiet --short HEAD 2>/dev/null
+}
+
+redraw_session_panes() {
+  local session pane cmd
+  session=$(wm_calling_session) || return 0
+  [ -n "$session" ] || return 0
+  while IFS=$'\t' read -r pane cmd; do
+    case "$cmd" in
+      bash|zsh|sh|dash|fish) tmux send-keys -t "$pane" C-u Enter 2>/dev/null ;;
+    esac
+  done < <(tmux list-panes -s -t "$session" \
+                -F '#{pane_id}'$'\t''#{pane_current_command}' 2>/dev/null)
+  return 0
 }
 
 # prompt <var> <label>          -- required: an empty answer cancels the action.
@@ -172,7 +198,7 @@ ROWS
   # need.
   out=$(printf '%s\n' "$rows" \
         | column -t -s $'\t' \
-        | fzf --prompt 'stack> ' --height 100% --border none \
+        | fzf --prompt 'stack> ' --height 100% --border none --no-preview \
               --expect=v,m,s,p,y,c,a \
               --header "gh stack   ${branch}   $(basename "$PWD")")
   [ -z "$out" ] && return 0
@@ -198,18 +224,58 @@ case "$action" in
   *) check_remote ;;
 esac
 
+branch_before=$(current_branch)
+
 case "$action" in
-  view)      run_and_show view ;;
+  view)      run view ;;
   switch)    run switch ;;
   up)        run up ;;
   down)      run down ;;
   checkout)  run checkout ;;          # no args: gh's own picker, remote stacks included
   modify)    run modify ;;
   submit)
+    # gh-stack records a PR against a branch and never re-checks whether it is
+    # still open, and GitHub keeps the stack itself alive with its closed PRs
+    # still listed. Submit therefore finds nothing new to ask about, skips the
+    # title editor and takes the --auto path, which names each PR after the
+    # branch's first commit and opens it as a draft.
+    #
+    # `unstack` is the one command that clears both halves -- local tracking and
+    # the stack on GitHub -- so when the whole stack is dead, tear it down and
+    # rebuild it from the same branches. Submit then sees layers with no PRs and
+    # no stack on GitHub, which is the state that opens the editor.
+    stack=$(gh stack view --json 2>/dev/null) || stack=
+    if [ -n "$stack" ]; then
+      trunk=$(printf '%s' "$stack" | jq -r '.trunk // empty')
+      mapfile -t layers < <(printf '%s' "$stack" | jq -r '.branches[].name')
+
+      # .pr.state here is whatever gh-stack recorded when it last submitted, not
+      # what GitHub thinks now, so ask GitHub per PR rather than trusting it.
+      recorded=0 dead=0
+      while IFS= read -r pr; do
+        [ -n "$pr" ] || continue
+        recorded=$((recorded + 1))
+        [ "$(gh pr view "$pr" --json state -q .state 2>/dev/null)" = OPEN ] \
+          || dead=$((dead + 1))
+      done < <(printf '%s' "$stack" | jq -r '.branches[].pr.number // empty')
+
+      # Only when every PR is dead. Unstacking a stack that still has a live PR
+      # would strip the stack UI off a pull request under review, and relinking
+      # it afterwards needs a Ctrl+B in the editor rather than happening on its own.
+      if [ "$recorded" -gt 0 ] && [ "$dead" -eq "$recorded" ] && [ -n "$trunk" ]; then
+        echo "Every PR in this stack is closed. Rebuilding the stack so submit asks for titles again."
+        echo "If this stops halfway:  gh stack init --base $trunk ${layers[*]}"
+        echo
+        run unstack
+        run init --base "$trunk" "${layers[@]}"
+        echo
+      fi
+    fi
+
     # gh stack never pushes the trunk, and GitHub cannot base a pull request on
     # a branch the remote does not have. Usually a no-op, since the trunk is
     # normally master, but it is what stopped the first submit creating anything
-    # when the trunk was a local-only branch.
+    # when the trunk was a local-only branch. Re-read after the rebuild above.
     trunk=$(stack_trunk)
     if [ -n "$trunk" ] \
        && ! git ls-remote --exit-code --heads origin "$trunk" >/dev/null 2>&1; then
@@ -222,8 +288,10 @@ case "$action" in
     ;;
   merge)     run merge ;;
 
-  sync|push|rebase)
+  sync|push)
              run_and_show "$action" ;;
+
+  rebase)    run rebase ;;
 
   continue)  run rebase --continue ;;
 
@@ -278,14 +346,14 @@ Run this by hand with the base you want:  gh stack init --base <branch> $branch"
   link)
     prompt refs 'Branches / PR numbers, bottom to top (space separated): '
     # shellcheck disable=SC2086  # deliberate word splitting
-    run_and_show link $refs
+    run link $refs
     ;;
 
   unstack)
     printf 'Unstack the current stack on GitHub? [y/N] '
     read -r reply
     case "${reply-}" in
-      y|Y) run_and_show unstack ;;
+      y|Y) run unstack ;;
       *)   exit 0 ;;
     esac
     ;;
@@ -294,5 +362,13 @@ Run this by hand with the base you want:  gh stack init --base <branch> $branch"
     wm_die "Unknown action '$action'."
     ;;
 esac
+
+[ "$(current_branch)" != "$branch_before" ] && redraw_session_panes
+
+# Unconditional: `add` and `modify` change the stack's shape, and so every
+# layer index, without changing the branch you are standing on.
+"${BASH_SOURCE%/*}/stack-pane-title.sh"
+
+exit 0
 
 

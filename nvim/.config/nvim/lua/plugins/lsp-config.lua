@@ -20,7 +20,7 @@ return {
         "harper-ls",
         "markdown-oxide",
         "stylua",
-        "roslyn",
+        "roslyn-nightly",
         "prettier",
       }
       local registry = require("mason-registry")
