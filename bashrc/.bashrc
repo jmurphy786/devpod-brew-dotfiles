@@ -25,6 +25,7 @@ tmux() {
   fi
 }
 
+unset CLAUDE_CODE_OAUTH_TOKEN
 alias ls='ls --color=auto'
 alias ll='ls -lah'
 alias grep='grep --color=auto'
