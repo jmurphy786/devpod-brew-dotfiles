@@ -60,4 +60,4 @@ if [ -n "$stack" ]; then
   printf '%s %s  %s\n' "$icon" "$branch" "$stack"
 else
   printf '%s %s\n' "$icon" "$branch"
-f
+fi
