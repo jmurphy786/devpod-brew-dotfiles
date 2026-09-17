@@ -134,46 +134,6 @@ __fzf_file_widget() {
     fi
 }
 
-dpod() {
-  local workspace container status_output attempts
-
-  workspace=$(devpod list --output plain 2>/dev/null | awk 'NR>1 {print $1}' | fzf --prompt="Exec into workspace: ")
-  [ -z "$workspace" ] && return
-
-  status_output=$(devpod status "$workspace" 2>/dev/null)
-  if ! echo "$status_output" | grep -qi running; then
-    echo "Workspace '$workspace' isn't running ($status_output) — starting it..."
-    devpod up "$workspace" || { echo "devpod up failed for '$workspace'"; return 1; }
-  fi
-
-  # docker ps should reflect the new container immediately after `devpod up`
-  # returns, but give it a couple retries in case of any lag.
-  attempts=0
-  while [ -z "$container" ] && [ "$attempts" -lt 3 ]; do
-    container=$(docker ps --format '{{.ID}} {{.Image}}' | awk -v ws="$workspace" '$2 ~ ws {print $1; exit}')
-    [ -z "$container" ] && sleep 1
-    attempts=$((attempts + 1))
-  done
-
-  if [ -z "$container" ]; then
-    echo "Workspace '$workspace' is running but no container matched by image name."
-    echo "Check: docker ps -a | grep -i practitioner"
-    return 1
-  fi
-
-  docker exec -it -u vscode "$container" bash
-}
-
-# Delete a devpod workspace via fzf
-function dpod-rm() {
-  local workspace
-  workspace=$(devpod list --output plain 2>/dev/null | awk 'NR>1 {print $1}' | fzf --prompt="Delete workspace: ")
-  if [ -n "$workspace" ]; then
-    read -p "Delete '$workspace'? (y/N) " confirm
-    [[ "$confirm" == [yY] ]] && devpod delete "$workspace"
-  fi
-}
-
 eval "$(starship init bash)"
 export TERM=xterm-256color
 
