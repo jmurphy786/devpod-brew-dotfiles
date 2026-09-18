@@ -381,10 +381,172 @@ wm_rows() {
   return 0
 }
 
+# wm_worktree_ports <path> -- comma-separated list of ports being served for a
+# worktree, or empty. Two sources:
+#   - Docker Compose containers whose project working_dir is this worktree.
+#     Works even though `docker-outside-of-docker` runs them as sibling
+#     containers on the host daemon -- the label still carries the working
+#     directory that started them, so matching is exact, not name-based.
+#   - Bare processes (e.g. `npm run dev`) listening under this worktree's
+#     directory, found by cross-referencing every listening socket's owning
+#     pid against /proc/<pid>/cwd. This only sees processes in this
+#     devcontainer's own PID namespace, so a dev server running inside a
+#     *different* devcontainer (a different repo entirely) will not show up
+#     here -- which is correct, since that could never be this repo's own
+#     worktree anyway.
+#
+# Called once per worktree from the `open` picker (a handful of rows at most),
+# not on a status-bar tick, so re-running `docker ps`/`lsof` per call is fine.
+wm_worktree_ports() {
+  local path="$1"
+  [ -n "$path" ] || return 0
+  local -a out=()
+
+  if command -v docker >/dev/null 2>&1; then
+    local p
+    while IFS= read -r p; do
+      [ -n "$p" ] && out+=("$p")
+    done < <(docker ps \
+               --filter "label=com.docker.compose.project.working_dir=$path" \
+               --format '{{.Ports}}' 2>/dev/null \
+             | grep -oE '0\.0\.0\.0:[0-9]+' | cut -d: -f2)
+  fi
+
+  if command -v lsof >/dev/null 2>&1; then
+    # `worktree_dir: .worktrees` nests every other worktree inside the main
+    # repo's own directory, so the main worktree's path is a filesystem
+    # prefix of the others. A cwd match against $path alone isn't enough --
+    # it also needs checking against every other worktree so a process
+    # actually living in a nested worktree doesn't get credited to the
+    # ancestor (e.g. master) too.
+    local -a wt_paths=()
+    while IFS= read -r wp; do
+      [ -n "$wp" ] && wt_paths+=("$wp")
+    done < <(git worktree list --porcelain 2>/dev/null | sed -n 's/^worktree //p')
+
+    local pid port cwd wp shadowed
+    while IFS=$'\t' read -r pid port; do
+      [ -n "$pid" ] || continue
+      cwd=$(readlink -f "/proc/$pid/cwd" 2>/dev/null) || continue
+      case "$cwd" in
+        "$path"|"$path"/*) ;;
+        *) continue ;;
+      esac
+      shadowed=0
+      for wp in "${wt_paths[@]}"; do
+        case "$wp" in
+          "$path"/*) ;;
+          *) continue ;;
+        esac
+        case "$cwd" in
+          "$wp"|"$wp"/*) shadowed=1; break ;;
+        esac
+      done
+      [ "$shadowed" -eq 0 ] && out+=("$port")
+    done < <(lsof -nP -iTCP -sTCP:LISTEN -Fpn 2>/dev/null | awk '
+                /^p/ { pid = substr($0, 2) }
+                /^n/ { name = substr($0, 2); sub(/.*:/, "", name); print pid "\t" name }
+              ')
+  fi
+
+  [ "${#out[@]}" -eq 0 ] && return 0
+  printf '%s\n' "${out[@]}" | sort -un | paste -sd,
+}
+
+# wm_rows_open <calling_session> -- concise TSV rows for the `open` picker
+# only (`remove`/`close` keep wm_rows/wm_rows_slow -- dirty/live status is
+# exactly what you need before destroying something, just not before jumping
+# somewhere). No handle column: `open` resolves the handle back from the
+# branch after selection (see wm_handle_for_branch), since the handle is an
+# implementation detail nobody picking a worktree to jump to needs to see.
+#   current(glyph, always one token) \t branch \t stack(i/n or -) \t ports(csv or -)
+#
+# The current-worktree marker uses two distinct non-blank glyphs (never a
+# blank/space) so it stays column 1: a blank field would collapse under
+# whitespace-based awk parsing on the `column -t`-aligned output and shift
+# every field after it.
+wm_rows_open() {
+  local calling="$1" main_handle prefix cur_handle=
+  main_handle=$(wm_main_handle)
+  prefix=$(_wm_prefix)
+  if [ -n "$calling" ]; then
+    if _wm_name_matches_handle "$calling" "$main_handle"; then
+      cur_handle="$main_handle"
+    else
+      cur_handle="${calling#"$prefix"}"
+    fi
+  fi
+
+  local -A stacked=()
+  local sb sp
+  while IFS=$'\t' read -r sb sp; do
+    [ -n "$sb" ] && stacked["$sb"]="$sp"
+  done < <(wm_stack_map)
+
+  local path= branch= handle stack ports current n=0 main_row=
+  local -a rest=()
+
+  _wm_emit_row() {
+    [ -n "$path" ] || return 0
+    handle=${path##*/}
+    [ -n "$branch" ] || branch='(detached)'
+    stack="${stacked[$branch]:--}"
+    ports=$(wm_worktree_ports "$path")
+    [ -n "$ports" ] || ports='-'
+    current='·'
+    [ "$handle" = "$cur_handle" ] && current='▶'
+    n=$((n + 1))
+    local row
+    row=$(printf '%s\t%s\t%s\t%s' "$current" "$branch" "$stack" "$ports")
+    if [ "$handle" = "$main_handle" ]; then
+      main_row="$row"
+    else
+      rest+=("$row")
+    fi
+    path=; branch=
+  }
+
+  while IFS= read -r name; do
+    case "$name" in
+      'worktree '*) _wm_emit_row; path=${name#worktree } ;;
+      'branch refs/heads/'*) branch=${name#branch refs/heads/} ;;
+      'branch '*) branch=${name#branch } ;;
+    esac
+  done < <(git worktree list --porcelain 2>/dev/null)
+  _wm_emit_row
+  unset -f _wm_emit_row
+
+  [ "$n" -gt 0 ] || return 1
+  [ -n "$main_row" ] && printf '%s\n' "$main_row"
+  [ "${#rest[@]}" -gt 0 ] && printf '%s\n' "${rest[@]}" | sort
+  return 0
+}
+
+# wm_handle_for_branch <branch> -> the worktree handle (directory name) whose
+# checked-out branch matches, empty if none. wm_rows_open's rows carry no
+# handle column, so this is how the `open` picker maps a selected branch back
+# to something `workmux open` accepts.
+wm_handle_for_branch() {
+  local want="$1" path= branch=
+  [ -n "$want" ] || return 1
+  while IFS= read -r name; do
+    case "$name" in
+      'worktree '*) path=${name#worktree } ;;
+      'branch refs/heads/'*)
+        branch=${name#branch refs/heads/}
+        if [ "$branch" = "$want" ]; then
+          printf '%s\n' "${path##*/}"
+          return 0
+        fi
+        ;;
+    esac
+  done < <(git worktree list --porcelain 2>/dev/null)
+  return 1
+}
+
 # The slow but authoritative version, kept as a fallback for when git output
 # cannot be parsed. Same columns, minus liveness detail (workmux's is_open).
-wm_rows_slow() {
-  local include_main="${1:-false}"
+wm_rows_slow() {="${1:-false}"
   wm_list_json | jq -r --argjson main "$include_main" '
     .[] | select($main or (.is_main | not))
     | [ .handle,
@@ -398,3 +560,7 @@ wm_rows_slow() {
 
 
 
+
+
+
+  local include_main

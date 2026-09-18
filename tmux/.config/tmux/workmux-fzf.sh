@@ -29,18 +29,36 @@ wm_worktrees() {
   wm_rows "$include_main" || wm_rows_slow "$include_main"
 }
 
-rows=$(wm_worktrees)
+# `open` gets its own leaner row/header: no dirty/live/path noise (there is
+# nothing to lose by jumping somewhere), but a ports column so a lingering
+# docker-compose stack or dev server is visible before you go looking for it.
+# `remove`/`close` keep the full wm_worktrees rows, since dirty/live status is
+# exactly what matters before destroying something.
+if [ "$cmd" = "open" ]; then
+  rows=$(wm_rows_open "$session")
+  header="workmux open   (▶ = current, i/n = stack layer, ports = live servers)"
+else
+  rows=$(wm_worktrees)
+  header="workmux $cmd   (* = uncommitted, live = tmux running, 2/3 = layer in stack)"
+fi
 [ -z "$rows" ] && wm_die "No worktrees to $cmd."
 
-# Column 1 is the handle -- the identifier open/remove/close document. It is the
-# branch slugified (PTL-5-Foo -> ptl-5-foo), so the two differ and the branch is
-# shown for readability only.
+# `open` rows have no handle column (nobody picking a worktree to jump to
+# needs to see it) -- column 1 is the current-worktree marker instead, and the
+# handle is resolved from column 2 (branch) after selection. `remove`/`close`
+# still lead with the handle itself, since branch is shown there for
+# readability only.
 selection=$(printf '%s\n' "$rows" \
             | column -t -s $'\t' \
             | fzf --prompt "$cmd> " --height 100% --border none --no-preview \
-                  --header "workmux $cmd   (* = uncommitted, live = tmux running, 2/3 = layer in stack)")
+                  --header "$header")
 [ -z "$selection" ] && exit 0
-handle=$(printf '%s' "$selection" | awk '{print $1}')
+if [ "$cmd" = "open" ]; then
+  branch=$(printf '%s' "$selection" | awk '{print $2}')
+  handle=$(wm_handle_for_branch "$branch")
+else
+  handle=$(printf '%s' "$selection" | awk '{print $1}')
+fi
 [ -z "$handle" ] && wm_die "Could not read a worktree handle from the selection."
 
 # Never destroy the session/window we are standing in.
@@ -96,6 +114,9 @@ if [ $status -ne 0 ]; then
   wm_hold "workmux $cmd '$handle' failed (exit $status)."
   exit $status
 fi
+
+
+
 
 
 
