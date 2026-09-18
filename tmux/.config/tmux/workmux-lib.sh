@@ -546,7 +546,8 @@ wm_handle_for_branch() {
 
 # The slow but authoritative version, kept as a fallback for when git output
 # cannot be parsed. Same columns, minus liveness detail (workmux's is_open).
-wm_rows_slow() {="${1:-false}"
+wm_rows_slow() {
+  local include_main="${1:-false}"
   wm_list_json | jq -r --argjson main "$include_main" '
     .[] | select($main or (.is_main | not))
     | [ .handle,
@@ -558,9 +559,3 @@ wm_rows_slow() {="${1:-false}"
         .path ] | @tsv'
 }
 
-
-
-
-
-
-  local include_main
