@@ -112,56 +112,7 @@ vim.api.nvim_create_user_command("Jq", function(opts)
   vim.cmd(string.format("%%!jq %s", vim.fn.shellescape(filter)))
 end, { nargs = "?", desc = "Filter buffer through jq" })
 
--- :Meeting - pick a meeting type and create/open its note
-vim.api.nvim_create_user_command("Meeting", function()
-  vim.ui.select({ "Weekly Refinement", "1-1", "Daily Standup" }, { prompt = "Meeting type:" }, function(selected)
-    if not selected then return end
-
-    local date = os.date("%Y-%m-%d")
-    local filepath = vim.fn.expand("~/work-notes/meetings/") .. selected:gsub(" ", "-") .. "-" .. date .. ".md"
-
-    if vim.fn.filereadable(filepath) == 0 then
-      vim.fn.writefile({ "# " .. selected .. " - " .. date, "", "## Notes", "", "## Tasks", "" }, filepath)
-    end
-
-    vim.cmd.edit(filepath)
-  end)
-end, { nargs = 0 })
-
--- :Task <ID> - create/open a Jira task note, eg. :Task NGP-417
-vim.api.nvim_create_user_command("Task", function(opts)
-  local task_id = opts.args
-
-  if not task_id:match("^[A-Z]+%-%d+$") then
-    vim.notify("Invalid format - use PREFIX-NUMBER (e.g. TRT-111)", vim.log.levels.WARN)
-    return
-  end
-
-  local url = "https://cirdan.atlassian.net/browse/" .. task_id
-  local filepath = vim.fn.expand("~/work-notes/tasks/") .. task_id .. ".md"
-
-  if vim.fn.filereadable(filepath) == 0 then
-    vim.fn.writefile({
-      "---",
-      "id: " .. task_id,
-      "url: " .. url,
-      "tags: [" .. task_id .. "]",
-      "---",
-      "# " .. task_id,
-      "",
-      "[" .. task_id .. "](" .. url .. ")",
-      "",
-      "## To Dos",
-      "",
-      "## Developer Notes",
-      "",
-      "## Testing",
-      "",
-    }, filepath)
-  end
-
-  vim.cmd.edit(filepath)
-end, { nargs = 1 })
+-- Note commands (:Zettel, :Inbox, :Tag, :Meeting, :Task) live in lua/notes.lua
 
 -- ============================================================
 -- KEYMAPS
@@ -198,10 +149,7 @@ map("n", "<leader>fT", "zA", { desc = "Fold toggle parent" })
 map("n", "<leader>fc", "zM", { desc = "Fold close all" })
 map("n", "<leader>fo", "zR", { desc = "Fold open all" })
 
--- Daily note
-map("n", "<leader>dn", function()
-  vim.cmd.edit(vim.fn.expand("~/work-notes/daily/") .. os.date("%Y-%m-%d") .. ".md")
-end, { desc = "Open daily note" })
+-- Daily note (:Daily via markdown-oxide, see lua/notes.lua)
 
 -- Text object: inside code fence (yic / dic / vic)
 map({ "o", "x" }, "ic", function()

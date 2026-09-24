@@ -19,5 +19,6 @@ vim.opt.rtp:prepend(lazypath)
 vim.env.PATH = vim.fn.stdpath("data") .. "/mason/bin:" .. vim.env.PATH
 
 require("vim-options")
+require("notes")
 require("lazy").setup("plugins")
 require("luasnip.loaders.from_lua").load({ paths = vim.fn.stdpath("config") .. "/luasnippets/" })

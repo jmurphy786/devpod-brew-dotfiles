@@ -9,8 +9,8 @@ return {
   build = ":TSUpdate",
   config = function()
     local parsers = {
-      "c", "c_sharp", "html", "javascript", "json", "lua", "markdown",
-      "markdown_inline", "query", "tsx", "typescript", "vim", "vimdoc",
+      "bash", "c_sharp", "json", "lua", "markdown",
+      "markdown_inline", "typescript", "yaml",
     }
 
     if vim.fn.executable("tree-sitter") == 1 then
