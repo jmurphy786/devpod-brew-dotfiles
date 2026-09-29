@@ -36,8 +36,8 @@ pane_history = true
 goto = "prefix+alt+o"
 new_worktree = "prefix+alt+g"
 
-# Worktree menu: o open this repo's worktrees, l worktrunk's picker (worktrees,
-# branches, PRs), a add one from a local or remote branch.
+# Worktree menu: o open this repo's worktrees, a add one from a local or remote
+# branch.
 [[keys.command]]
 key = "prefix+g"
 type = "plugin_action"

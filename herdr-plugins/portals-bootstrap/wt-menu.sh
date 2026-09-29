@@ -1,17 +1,15 @@
 #!/usr/bin/env bash
-# prefix+g: worktree menu. A three-row letter menu in one popup, then:
+# prefix+g: worktree menu. A two-row letter menu in one popup, then an fzf list:
 #
-#   o  here    fzf list of the current repo's worktrees
-#   l  picker  worktrunk's own picker: worktrees, branches and open PRs
-#   a  add     fzf list of local and remote branches with no worktree yet
+#   o  here  the current repo's worktrees
+#   a  add   local and remote branches with no worktree yet
 #
 # Worktrunk (`wt`) supplies the rows and creates the checkouts; herdr's own New /
 # Open worktree only run from the parent repo. Creating goes through
 # `wt switch --no-cd`, whose post-switch hook (~/.config/worktrunk/config.toml)
-# hands the checkout to herdr, as does the picker. Opening an existing one from
-# the o list is `herdr worktree open`.
+# hands the checkout to herdr. Opening an existing one is `herdr worktree open`.
 #
-# Arguments: (none) the menu; o | l | a a menu row; list here|add; picker.
+# Arguments: (none) the menu; o | a a menu row; list here|add.
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
 . ./lib.sh
@@ -60,30 +58,18 @@ rows() {
 case "${1:-}" in
   o) set -- list here ;;
   a) set -- list add ;;
-  l) set -- picker ;;
 esac
 
 if [ "${1:-}" = "" ]; then
   # Step 1. --disabled makes the letters binds instead of filter text.
   printf '%s\n' \
     "o  open a worktree      this repo" \
-    "l  worktrunk picker     worktrees, branches, PRs" \
     "a  add a worktree       from a local / remote branch" \
     | fzf --disabled --no-info --layout=reverse --height=100% --prompt='' \
         --header='press a letter' \
         --bind "o:become(bash '$self' o)" \
-        --bind "l:become(bash '$self' l)" \
         --bind "a:become(bash '$self' a)" \
         --bind "enter:become(bash '$self' {1})" >/dev/null
-  exit 0
-fi
-
-if [ "$1" = picker ]; then
-  # Worktrunk's own picker. --no-cd because a popup has no shell to move; its
-  # post-switch hook opens the result in herdr.
-  here=$(jm_invoking_cwd) || jm_die "Could not tell which checkout this was opened from."
-  cd "$here" || jm_die "Cannot enter $here."
-  wt switch --branches --remotes --prs --no-cd || jm_hold "wt switch failed."
   exit 0
 fi
 
