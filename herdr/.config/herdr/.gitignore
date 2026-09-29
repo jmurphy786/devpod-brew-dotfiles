@@ -11,3 +11,4 @@ plugins/*
 !plugins/config/
 plugins/config/*/state/
 release-notes.json
+session-history.json

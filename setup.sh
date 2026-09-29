@@ -45,4 +45,7 @@ stow --target="$HOME" "${packages[@]}"
 echo "Registering herdr plugins..."
 herdr plugin link "$SCRIPT_DIR/herdr-plugins/portals-bootstrap" || true
 
+# Lets herdr resume claude sessions (claude --resume) after a server restart.
+herdr integration install claude || true
+
 echo "Done!"

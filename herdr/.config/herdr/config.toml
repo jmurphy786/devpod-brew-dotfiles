@@ -1,80 +1,23 @@
 onboarding = false
 
-[theme]
-name = "catppuccin"
+# Container (server) half of the herdr setup. The WSL2 host runs the herdr
+# client and drives this container as a saved machine; the theme, keys and
+# sidebar come from the host's config in jmurphy786/dotfiles (wsl/herdr), not
+# from here. This file covers what the server applies to panes running in the
+# container. The jm.portals-bootstrap plugin (herdr-plugins/, linked by
+# setup.sh) is what the host's plugin_action keys resolve to.
 
-# One file for both ends: stowed on the WSL2 host (the client) and in every
-# devcontainer (a server). The client applies [theme], [ui] and [keys]; the
-# server applies [worktrees], [terminal] and [session] and runs the plugin
-# actions a key resolves to -- so a binding pressed on the host runs inside
-# whichever container's workspace is selected.
-[keys]
-prefix = "ctrl+b"
-
-focus_pane_left = "ctrl+h"
-focus_pane_down = "ctrl+j"
-focus_pane_up = "ctrl+k"
-focus_pane_right = "ctrl+l"
-
-split_vertical = "prefix+%"
-split_horizontal = "prefix+,"
-
-new_tab = "prefix+c"
-
-toggle_sidebar = "prefix+p"
-
-# Built-in worktree handling, bound. workspace_picker (prefix+w) and
-# close_workspace (prefix+shift+d) keep their defaults. remove_worktree only
-# deletes the checkout -- the branch stays, like `workmux remove -k`.
-open_worktree = "prefix+g"
-remove_worktree = "prefix+d"
-
-# The built-in dialog puts checkouts under worktrees.directory, outside the
-# bind-mounted repo, where a rebuild loses them and workmux cannot see them.
-# prefix+shift+g below replaces it.
-new_worktree = ""
-
-# Worktree from a local branch, a remote-only branch, an open PR, or a typed
-# new name, checked out under <repo>/.worktrees/<slug> like workmux does.
-[[keys.command]]
-key = "prefix+shift+g"
-type = "plugin_action"
-command = "jm.portals-bootstrap.wt-add-open"
-description = "worktree: new from branch / remote / PR"
-
-# The prefix+S gh-stack menu, ported off the tmux display-menu.
-[[keys.command]]
-key = "prefix+shift+s"
-type = "plugin_action"
-command = "jm.portals-bootstrap.gh-stack-open"
-description = "gh stack"
-
-# Add a DevPod container as a machine, with its repo as a workspace. Host
-# only: run it with Local selected, since a command runs on the selected
-# server and the containers have no devpod.
-[[keys.command]]
-key = "prefix+shift+m"
-type = "popup"
-command = '"$HOME/.config/herdr/scripts/devpod-add.sh"'
-description = "devpod: add container"
-
-# Rename, disable/enable or remove a saved machine. Host only, like the one
-# above: herdr has no built-in binding for this.
-[[keys.command]]
-key = "prefix+shift+e"
-type = "popup"
-command = '"$HOME/.config/herdr/scripts/devpod-manage.sh"'
-description = "devpod: manage machines"
-
-# Only reached by herdr's own dialog, which prefix+shift+g replaces.
+# Only reached by herdr's own New worktree dialog, which the host leaves
+# unbound. The plugin's picker puts checkouts in <repo>/.worktrees instead.
 [worktrees]
 directory = "~/.herdr/worktrees"
 
-# Spaces sidebar. Worktrees stay grouped under their repo's row; $jm_mark
-# flags them as its branches, and $jm_stack is the gh-stack layer index --
-# both published by jm.portals-bootstrap on the server, styled here.
-[ui.sidebar.spaces]
-rows = [
-  ["state_icon", { token = "$jm_mark", fg = "#89b4fa" }, "workspace"],
-  ["branch", "git_status", { token = "$jm_stack", fg = "#89b4fa" }],
-]
+# After the container restarts and herdr-up.sh starts the server again:
+# workspaces, tabs and pane directories come back from session.json, claude
+# sessions resume through the herdr claude integration (setup.sh installs it),
+# and pane_history brings back each pane's scrollback.
+[session]
+resume_agents_on_restore = true
+
+[experimental]
+pane_history = true
