@@ -99,14 +99,6 @@ run() {
   return 0
 }
 
-# Same, but hold the popup open on success too. Only sync and push use this:
-# their output is a summary of what moved, and it is worth reading. Everything
-# else closes the moment it returns -- a hold after a TUI you have already quit
-# is just a second keypress.
-run_and_show() {
-  run "$@" && wm_hold ""
-}
-
 # A branch change made in the popup (view, switch, checkout, up/down) leaves the
 # already-drawn starship prompts showing the old branch: a prompt on screen is a
 # snapshot of when it was drawn, and nothing redraws it until the shell issues
@@ -167,20 +159,24 @@ prompt_optional() {
 
 # key <TAB> action <TAB> description.
 #
-# Deliberately short. The dropped subcommands are still reachable as arguments
-# (gh-stack-fzf.sh merge) and can each earn a row back if they turn out to be
-# missed. checkout and sync are here despite the trim because they are the two
-# things lazygit structurally cannot do: a fetch brings down a stack's branches
-# but never its tracking state, and pulling a layer in lazygit rebases it
-# against its own upstream rather than against its parent.
+# Stack shape and stack switching only. Everything that rebases or pushes --
+# rebase, continue, abort, push, sync -- lives in lazygit under <c-g>, next to
+# the conflicted files those commands leave behind; see
+# ~/.config/lazygit/config.yml, which carries the workflow notes that used to sit
+# above the dispatch here.
+#
+# The remaining subcommands not given a row (merge, link, unstack, init, switch,
+# up, down) are still reachable as arguments: gh-stack-fzf.sh merge.
+#
+# checkout stays despite the trim because it is the one thing lazygit
+# structurally cannot do: a fetch brings down a stack's branches but never its
+# tracking state.
 menu() {
   local rows
   rows=$(cat <<'ROWS'
 v	view	show the stack and its PR status
 m	modify	reorder, fold, drop or rename layers
 s	submit	push branches and create or update the PRs
-p	push	push the stack's branches, without touching the PRs
-y	sync	fetch, cascade-rebase, push, refresh PR state
 c	checkout	open another stack (local, or pulled from GitHub)
 a	add	add a layer, starting the stack if there isn't one
 ROWS
@@ -199,7 +195,7 @@ ROWS
   out=$(printf '%s\n' "$rows" \
         | column -t -s $'\t' \
         | fzf --prompt 'stack> ' --height 100% --border none --no-preview \
-              --expect=v,m,s,p,y,c,a \
+              --expect=v,m,s,c,a \
               --header "gh stack   ${branch}   $(basename "$PWD")")
   [ -z "$out" ] && return 0
 
@@ -220,7 +216,7 @@ action="${1-}"
 
 # Everything except the purely local moves needs the GitHub API.
 case "$action" in
-  up|down|continue) ;;
+  up|down) ;;
   *) check_remote ;;
 esac
 
@@ -287,13 +283,6 @@ case "$action" in
     run submit
     ;;
   merge)     run merge ;;
-
-  sync|push)
-             run_and_show "$action" ;;
-
-  rebase)    run rebase ;;
-
-  continue)  run rebase --continue ;;
 
   init)
     # --base names the stack's trunk, and the branch you are standing on is

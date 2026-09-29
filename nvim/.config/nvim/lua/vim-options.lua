@@ -83,6 +83,39 @@ vim.api.nvim_create_autocmd({ "InsertLeave", "TextChanged", "FocusLost", "BufLea
   end,
 })
 
+-- o / O open a plain line: no comment leader or "- " list marker carried over.
+-- <CR> in insert mode still continues them ("r" flag). Scheduled so it runs
+-- after the filetype plugin, which sets formatoptions itself.
+vim.api.nvim_create_autocmd("FileType", {
+  callback = function(args)
+    vim.schedule(function()
+      if vim.api.nvim_buf_is_valid(args.buf) then
+        vim.bo[args.buf].formatoptions = vim.bo[args.buf].formatoptions:gsub("o", "")
+      end
+    end)
+  end,
+})
+
+-- Markdown reading: soft-wrap at word boundaries, wrapped list lines indent
+-- under their bullet text, j/k move by screen line (counts still use real lines).
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "markdown",
+  callback = function(args)
+    vim.opt_local.wrap = true
+    vim.opt_local.linebreak = true
+    vim.opt_local.breakindent = true
+    vim.opt_local.breakindentopt = "list:-1"
+    -- list:-1 indents by the formatlistpat match: "1." / "-" / "*" / "+" bullets and "[ ]" boxes
+    vim.opt_local.formatlistpat = [[^\s*\(\d\+[.)]\|[-*+]\)\s\+\(\[.\]\s\+\)\?]]
+    vim.opt_local.showbreak = "↪ "
+    for _, key in ipairs({ "j", "k" }) do
+      vim.keymap.set({ "n", "x" }, key, function()
+        return vim.v.count == 0 and "g" .. key or key
+      end, { buffer = args.buf, expr = true, desc = "Move by screen line" })
+    end
+  end,
+})
+
 -- Prepopulate new note files
 local templates = {
   ["*/meetings/*.md"] = { "## Attendees", "", "## Notes", "", "## Action Items", "", "## Tasks", "" },
@@ -149,7 +182,7 @@ map("n", "<leader>fT", "zA", { desc = "Fold toggle parent" })
 map("n", "<leader>fc", "zM", { desc = "Fold close all" })
 map("n", "<leader>fo", "zR", { desc = "Fold open all" })
 
--- Daily note (:Daily via markdown-oxide, see lua/notes.lua)
+-- Daily note: :DailyNote / :dn / <leader>dn, see lua/notes.lua
 
 -- Text object: inside code fence (yic / dic / vic)
 map({ "o", "x" }, "ic", function()

@@ -1,0 +1,67 @@
+# gh-stack's rebase loop, driven from here.
+#
+# The split: the prefix+S tmux menu keeps the stack-shape work (view, modify,
+# submit, checkout, add); lazygit gets everything that rebases or pushes, because
+# that is where the conflicted files already are.
+#
+# A stack is a chain, each layer built on the tip of the one below. Amend a lower
+# layer and everything above it is still built on the old version and has to be
+# replayed onto the new tip. That replay is the only thing that ever goes wrong in
+# a stack, and these commands are all about it.
+#
+#   rebase    the cascade, local only. STOPS AT the conflict and leaves it in the
+#             worktree for you. Never pushes.
+#   continue  gh stack rebase --continue. A rebase replays commit by commit, so it
+#             halts once per conflicting commit -- expect to run this several times.
+#   abort     unwinds the whole cascade and restores every branch.
+#   push      pushes the stack's branches without touching the PRs.
+#   sync      fetch, cascade-rebase, push, refresh PR state -- and ATOMIC. If a
+#             layer conflicts it restores every branch and pushes nothing, because
+#             a conflict needs a decision it cannot ask you for. A clean-looking
+#             worktree after a failed sync is that, not damage. There is then no
+#             rebase in progress to `continue`: reach for `rebase` instead.
+#
+# So when sync reports a conflict: rebase -> resolve -> stage -> continue,
+# repeating from the resolve whenever it stops again, then sync to push once it is
+# through. Nothing has left the machine until that final sync.
+#
+# Two things that catch people out:
+#   - HEAD in the conflict markers is the layer BELOW, not your branch. "theirs"
+#     is your own commit being replayed.
+#   - Do NOT use lazygit's own `m` abort/continue menu or its branch-panel rebase
+#     while a gh stack rebase is in progress. Those run plain `git rebase
+#     --continue`, which finishes one layer and strands the rest of the cascade,
+#     and they skip gh-stack's leftover-conflict-marker check. A cascade needs the
+#     three-argument form per layer,
+#       git rebase --onto <new tip of layer below> <old tip of layer below> <layer>
+#     which lazygit does not offer.
+#
+# Stage only the conflicted files and never commit by hand mid-rebase; `continue`
+# makes the commit with the original message.
+customCommands:
+  - key: '<c-g>'
+    context: 'global'
+    description: 'gh stack'
+    prompts:
+      - type: 'menu'
+        key: 'Action'
+        title: 'gh stack'
+        options:
+          - name: 'rebase'
+            description: 'cascade-rebase the stack, stopping on conflicts'
+            value: 'rebase'
+          - name: 'continue'
+            description: 'resume after staging the resolved files'
+            value: 'rebase --continue'
+          - name: 'abort'
+            description: 'unwind the cascade, restore every branch'
+            value: 'rebase --abort'
+          - name: 'push'
+            description: 'push the stack branches, leave the PRs alone'
+            value: 'push'
+          - name: 'sync'
+            description: 'fetch, cascade-rebase, push, refresh PR state'
+            value: 'sync'
+    command: 'gh stack {{.Form.Action}}'
+    output: terminal
+

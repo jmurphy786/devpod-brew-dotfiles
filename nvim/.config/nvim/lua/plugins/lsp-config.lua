@@ -120,7 +120,12 @@ return {
         vim.lsp.buf.definition()
       end, { desc = "Go to definition in vsplit" })
       vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { desc = "Code action" })
-      vim.keymap.set("n", "<leader>.", vim.lsp.buf.hover, { desc = "Hover docs / definition" })
+      vim.keymap.set("n", "<leader>.", function()
+        vim.lsp.buf.hover({
+          max_width = math.floor(vim.o.columns * 0.8),
+          max_height = math.floor(vim.o.lines * 0.8),
+        })
+      end, { desc = "Hover docs / definition" })
       vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, { desc = "Line diagnostics" })
       vim.keymap.set("n", "<leader>lr", function()
         vim.lsp.stop_client(vim.lsp.get_clients({ bufnr = 0 }))

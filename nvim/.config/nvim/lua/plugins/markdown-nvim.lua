@@ -48,22 +48,8 @@ return {
         return vim.keycode("<CR>")
       end, "New list item below / newline", { expr = true })
 
-      -- Normal mode does not go through blink, so a direct call is fine here.
-      -- The list functions return false outside a list item; fall back to the
-      -- built-in key ("n" = no remap, "i" = ahead of any queued keys).
-      local function fallback(key)
-        vim.api.nvim_feedkeys(vim.keycode(key), "ni", false)
-      end
-      map("n", "o", function()
-        if not list.insert_list_item_below() then
-          fallback("o")
-        end
-      end, "New list item below / open line")
-      map("n", "O", function()
-        if not list.insert_list_item_above() then
-          fallback("O")
-        end
-      end, "New list item above / open line")
+      -- o / O deliberately stay plain "open line": lists only continue on
+      -- insert-mode <CR> while typing (see formatoptions in vim-options.lua).
 
       map("n", "<leader>x", "<Cmd>MDTaskToggle<CR>", "Toggle task")
       map("x", "<leader>x", ":MDTaskToggle<CR>", "Toggle task")
