@@ -117,6 +117,10 @@ jm_context() {
 
 # jm_invoking_cwd -- the checkout the popup was opened over.
 #
+# The context herdr really sends is flat -- focused_pane_cwd, workspace_cwd --
+# with no worktree block for a plain repo workspace, so those come before the
+# nested keys. Without them a menu opened over a main checkout found no cwd.
+#
 # Plugin commands run with the *plugin directory* as cwd, not the pane's, so
 # anything repo-relative has to resolve this first. A stack lives inside one
 # worktree and every `gh stack` command is relative to the branch checked out
@@ -127,6 +131,8 @@ jm_invoking_cwd() {
     "$(jm_context worktree.checkout_path)" \
     "$(jm_context worktree.path)" \
     "$(jm_context workspace.worktree.checkout_path)" \
+    "$(jm_context focused_pane_cwd)" \
+    "$(jm_context workspace_cwd)" \
     "$(jm_context pane.cwd)"; do
     [ -n "$p" ] && [ -d "$p" ] && { printf '%s' "$p"; return 0; }
   done

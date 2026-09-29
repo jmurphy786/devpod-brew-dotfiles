@@ -4,8 +4,9 @@ onboarding = false
 # client and drives this container as a saved machine; the theme, keys and
 # sidebar come from the host's config in jmurphy786/dotfiles (wsl/herdr), not
 # from here. This file covers what the server applies to panes running in the
-# container. The jm.portals-bootstrap plugin (herdr-plugins/, linked by
-# setup.sh) is what the host's plugin_action keys resolve to.
+# container, including the [[keys.command]] plugin_action keys at the bottom:
+# custom commands are server-side config, so they live next to the
+# jm.portals-bootstrap plugin (herdr-plugins/, linked by setup.sh) they run.
 
 # Only reached by herdr's own New worktree dialog, which the host parks on
 # prefix+alt+g. Worktrunk (~/.config/worktrunk) puts checkouts in
@@ -22,3 +23,29 @@ resume_agents_on_restore = true
 
 [experimental]
 pane_history = true
+
+# Custom commands are server-side config: the host client does not forward a
+# keys.command it doesn't have itself, so the plugin binds have to live here, on
+# the server that has the plugin, not in the host's config (they were moved
+# there in 24d4320 and stopped working in every container).
+#
+# A built-in wins a key clash and the keys.command on it is disabled, so the
+# two defaults these keys would collide with are parked on unused chords:
+# goto (the agent/terminal picker) is prefix+g, new_worktree prefix+shift+g.
+[keys]
+goto = "prefix+alt+o"
+new_worktree = "prefix+alt+g"
+
+# Worktree menu: o open this repo's worktrees, l any repo's on this machine, a
+# add one from a local or remote branch.
+[[keys.command]]
+key = "prefix+g"
+type = "plugin_action"
+command = "jm.portals-bootstrap.wt-menu-open"
+description = "worktrees: open / add"
+
+[[keys.command]]
+key = "prefix+shift+s"
+type = "plugin_action"
+command = "jm.portals-bootstrap.gh-stack-open"
+description = "gh stack"
