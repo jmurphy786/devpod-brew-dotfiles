@@ -53,14 +53,15 @@ title = "gh stack"
 contexts = ["workspace"]
 command = ["sh", "-c", '"$HERDR_BIN_PATH" plugin pane open --plugin jm.portals-bootstrap --entrypoint gh-stack']
 
-# The worktree menu (prefix+g): an o / l / a letter menu, then a list. Works from
+# The worktree menu (prefix+g): an o / l / a letter menu, then a list or
+# worktrunk's picker (80% so its preview panel has room). Works from
 # a linked worktree, unlike herdr's built-in New/Open worktree.
 [[panes]]
 id = "wt-menu"
 title = "worktrees"
 placement = "popup"
-width = "60%"
-height = "60%"
+width = "80%"
+height = "80%"
 command = ["bash", "wt-menu.sh"]
 
 [[actions]]
