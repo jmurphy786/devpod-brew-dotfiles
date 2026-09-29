@@ -13,16 +13,16 @@ export LC_ALL=en_US.UTF-8
 # tmux fixes a client's UTF-8 mode at attach time from LC_ALL/LC_CTYPE/LANG.
 # `-u` forces UTF-8 output regardless, so a locale-less `docker exec` attach
 # can't strip Nerd Font glyphs into blank cells.
-# Bare `tmux` bootstraps the project's master workmux session (see
-# ~/.config/tmux/tmux-bootstrap.sh). Anything with arguments, or a call from
-# inside tmux, goes straight to real tmux. A function, not an alias, because
-# the two cannot coexist under one name -- the alias would always win.
+# Bare `tmux` used to bootstrap the project's master workmux session
+# (~/.config/tmux/tmux-bootstrap.sh, still on disk for reference). That call is
+# switched off while worktrees run through herdr and worktrunk; re-enable by
+# restoring the bare-`tmux` branch below.
 tmux() {
-  if [ $# -eq 0 ] && [ -z "${TMUX-}" ] && [ -x "$HOME/.config/tmux/tmux-bootstrap.sh" ]; then
-    "$HOME/.config/tmux/tmux-bootstrap.sh"
-  else
+  # if [ $# -eq 0 ] && [ -z "${TMUX-}" ] && [ -x "$HOME/.config/tmux/tmux-bootstrap.sh" ]; then
+  #   "$HOME/.config/tmux/tmux-bootstrap.sh"
+  # else
     command tmux -u "$@"
-  fi
+  # fi
 }
 
 unset CLAUDE_CODE_OAUTH_TOKEN

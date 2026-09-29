@@ -1,5 +1,5 @@
 # Local herdr plugin: what herdr's built-in worktree support does not cover --
-# creating a worktree from a remote branch or PR inside the repo, the
+# a worktree picker that works from a linked worktree (worktrunk), the
 # per-worktree symlinks and tab layout, and the gh-stack layer index in the
 # spaces sidebar. Opening, removing and closing worktrees are herdr's own.
 #
@@ -17,9 +17,9 @@ platforms = ["linux", "macos"]
 # from the `windows:` block of the repo's .workmux.yaml (falling back to
 # ~/.config/workmux/config.yaml).
 #
-# Both events are needed. wt-add-from-branch.sh's `herdr worktree create`
-# emits worktree.created; reopening a checkout made by `workmux add` goes
-# through `open_worktree`, which emits worktree.opened. layout.sh ignores an
+# Both events are needed. Worktrunk's post-switch hook runs `herdr worktree
+# open`, which emits worktree.opened; worktree.created covers herdr's own
+# `worktree create`. layout.sh ignores an
 # already_open workspace and one that already has more than a single tab, so
 # re-opening a closed worktree does not stack a second set of tabs on it.
 [[events]]
@@ -56,18 +56,19 @@ title = "gh stack"
 contexts = ["workspace"]
 command = ["sh", "-c", '"$HERDR_BIN_PATH" plugin pane open --plugin jm.portals-bootstrap --entrypoint gh-stack']
 
-# The worktree picker: local branch, remote-only branch, open PR, or a typed
-# new name. Replaces the tmux prefix,w -> a / b popups.
+# The worktree picker: worktrunk's `wt switch` over worktrees, local and remote
+# branches, and open PRs, or a typed new name. Works from a linked worktree,
+# unlike herdr's built-in New/Open worktree.
 [[panes]]
-id = "wt-add"
-title = "new worktree"
+id = "wt-switch"
+title = "worktrees"
 placement = "popup"
 width = "80%"
 height = "80%"
-command = ["bash", "wt-add-from-branch.sh"]
+command = ["bash", "wt-switch.sh"]
 
 [[actions]]
-id = "wt-add-open"
-title = "New worktree from branch / remote / PR"
+id = "wt-switch-open"
+title = "Worktrees: open / new from branch / remote / PR"
 contexts = ["workspace"]
-command = ["sh", "-c", '"$HERDR_BIN_PATH" plugin pane open --plugin jm.portals-bootstrap --entrypoint wt-add']
+command = ["sh", "-c", '"$HERDR_BIN_PATH" plugin pane open --plugin jm.portals-bootstrap --entrypoint wt-switch']

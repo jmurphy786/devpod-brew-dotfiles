@@ -8,7 +8,7 @@ PACKAGES=(
     stow zoxide tmux raine/workmux/workmux tuicr
     lazydocker starship claude-code ripgrep resvg file
     yazi fzf lazygit wl-clipboard
-    herdr
+    herdr worktrunk
 )
 for package in "${PACKAGES[@]}"; do
     if brew list "$package" &>/dev/null; then

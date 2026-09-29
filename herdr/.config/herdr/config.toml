@@ -7,8 +7,9 @@ onboarding = false
 # container. The jm.portals-bootstrap plugin (herdr-plugins/, linked by
 # setup.sh) is what the host's plugin_action keys resolve to.
 
-# Only reached by herdr's own New worktree dialog, which the host leaves
-# unbound. The plugin's picker puts checkouts in <repo>/.worktrees instead.
+# Only reached by herdr's own New worktree dialog, which the host parks on
+# prefix+alt+g. Worktrunk (~/.config/worktrunk) puts checkouts in
+# <repo>/.worktrees instead.
 [worktrees]
 directory = "~/.herdr/worktrees"
 
