@@ -58,6 +58,14 @@ type = "popup"
 command = '"$HOME/.config/herdr/scripts/devpod-add.sh"'
 description = "devpod: add container"
 
+# Rename, disable/enable or remove a saved machine. Host only, like the one
+# above: herdr has no built-in binding for this.
+[[keys.command]]
+key = "prefix+shift+e"
+type = "popup"
+command = '"$HOME/.config/herdr/scripts/devpod-manage.sh"'
+description = "devpod: manage machines"
+
 # Only reached by herdr's own dialog, which prefix+shift+g replaces.
 [worktrees]
 directory = "~/.herdr/worktrees"
