@@ -8,6 +8,7 @@ PACKAGES=(
     stow zoxide tmux raine/workmux/workmux tuicr
     lazydocker starship claude-code ripgrep resvg file
     yazi fzf lazygit wl-clipboard
+    herdr
 )
 for package in "${PACKAGES[@]}"; do
     if brew list "$package" &>/dev/null; then
@@ -28,6 +29,20 @@ fi
 gh extension install github/gh-stack
 
 cd "$SCRIPT_DIR"
-stow --target="$HOME" */
+# herdr-plugins/ holds plugin sources linked by `herdr plugin link` below, not
+# a stow package -- stowing it would drop a stray ~/portals-bootstrap symlink.
+packages=()
+for d in */; do
+    [ "$d" = "herdr-plugins/" ] || packages+=("${d%/}")
+done
+stow --target="$HOME" "${packages[@]}"
+
+# herdr plugins. These are global to the user and registered outside the
+# stowed config, so a rebuilt container needs them re-registered even though
+# ~/.config/herdr came back with the dotfiles.
+#   portals-bootstrap  -- local: worktree picker, tab layout, symlinks and
+#                         the gh-stack sidebar index
+echo "Registering herdr plugins..."
+herdr plugin link "$SCRIPT_DIR/herdr-plugins/portals-bootstrap" || true
 
 echo "Done!"

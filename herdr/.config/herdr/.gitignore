@@ -1,0 +1,13 @@
+# herdr writes its runtime state into the same directory as its config, and
+# ~/.config/herdr is a stow symlink into this repo, so all of it lands here.
+# Track the config and the per-plugin settings; ignore everything herdr
+# regenerates, including the managed checkouts of GitHub-installed plugins.
+*.log
+*.sock
+.plugins.lock
+plugins.json
+session.json
+plugins/*
+!plugins/config/
+plugins/config/*/state/
+release-notes.json

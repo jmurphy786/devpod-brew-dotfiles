@@ -1,0 +1,73 @@
+# Local herdr plugin: what herdr's built-in worktree support does not cover --
+# creating a worktree from a remote branch or PR inside the repo, the
+# per-worktree symlinks and tab layout, and the gh-stack layer index in the
+# spaces sidebar. Opening, removing and closing worktrees are herdr's own.
+#
+# Linked, not installed, so it stays editable in place:
+#   herdr plugin link ~/dotfiles/herdr-plugins/portals-bootstrap
+
+id = "jm.portals-bootstrap"
+name = "Portals bootstrap"
+version = "0.1.0"
+min_herdr_version = "0.9.0"
+description = "Worktree picker, tab layout, symlinks and gh-stack sidebar index"
+platforms = ["linux", "macos"]
+
+# Lay out a new worktree workspace: the files.symlink links, then the tabs
+# from the `windows:` block of the repo's .workmux.yaml (falling back to
+# ~/.config/workmux/config.yaml).
+#
+# Both events are needed. wt-add-from-branch.sh's `herdr worktree create`
+# emits worktree.created; reopening a checkout made by `workmux add` goes
+# through `open_worktree`, which emits worktree.opened. layout.sh ignores an
+# already_open workspace and one that already has more than a single tab, so
+# re-opening a closed worktree does not stack a second set of tabs on it.
+[[events]]
+on = "worktree.created"
+command = ["bash", "layout.sh"]
+
+[[events]]
+on = "worktree.opened"
+command = ["bash", "layout.sh"]
+
+# Re-read the index after `gh stack add|modify|up|down`, which shift every
+# layer without changing anything herdr can observe on its own. This is the
+# replacement for stack-pane-title.sh's SIGUSR1 to the workmux sidebar daemon.
+[[actions]]
+id = "stack-refresh"
+title = "Refresh gh-stack index"
+contexts = ["workspace"]
+command = ["bash", "stack.sh", "--all"]
+
+# The `prefix S` gh-stack menu, ported off tmux display-menu.
+[[panes]]
+id = "gh-stack"
+title = "gh stack"
+placement = "popup"
+width = "80%"
+height = "80%"
+command = ["bash", "gh-stack.sh"]
+
+# A keybinding can invoke an action but not a pane entrypoint, so this is the
+# hop that lets prefix+S open the popup above.
+[[actions]]
+id = "gh-stack-open"
+title = "gh stack"
+contexts = ["workspace"]
+command = ["sh", "-c", '"$HERDR_BIN_PATH" plugin pane open --plugin jm.portals-bootstrap --entrypoint gh-stack']
+
+# The worktree picker: local branch, remote-only branch, open PR, or a typed
+# new name. Replaces the tmux prefix,w -> a / b popups.
+[[panes]]
+id = "wt-add"
+title = "new worktree"
+placement = "popup"
+width = "80%"
+height = "80%"
+command = ["bash", "wt-add-from-branch.sh"]
+
+[[actions]]
+id = "wt-add-open"
+title = "New worktree from branch / remote / PR"
+contexts = ["workspace"]
+command = ["sh", "-c", '"$HERDR_BIN_PATH" plugin pane open --plugin jm.portals-bootstrap --entrypoint wt-add']

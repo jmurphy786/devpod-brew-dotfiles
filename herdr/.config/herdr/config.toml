@@ -1,8 +1,13 @@
 onboarding = false
 
 [theme]
-name="catpuccin"
+name = "catppuccin"
 
+# One file for both ends: stowed on the WSL2 host (the client) and in every
+# devcontainer (a server). The client applies [theme], [ui] and [keys]; the
+# server applies [worktrees], [terminal] and [session] and runs the plugin
+# actions a key resolves to -- so a binding pressed on the host runs inside
+# whichever container's workspace is selected.
 [keys]
 prefix = "ctrl+b"
 
@@ -18,19 +23,50 @@ new_tab = "prefix+c"
 
 toggle_sidebar = "prefix+p"
 
+# Built-in worktree handling, bound. workspace_picker (prefix+w) and
+# close_workspace (prefix+shift+d) keep their defaults. remove_worktree only
+# deletes the checkout -- the branch stays, like `workmux remove -k`.
+open_worktree = "prefix+g"
+remove_worktree = "prefix+d"
 
+# The built-in dialog puts checkouts under worktrees.directory, outside the
+# bind-mounted repo, where a rebuild loses them and workmux cannot see them.
+# prefix+shift+g below replaces it.
+new_worktree = ""
+
+# Worktree from a local branch, a remote-only branch, an open PR, or a typed
+# new name, checked out under <repo>/.worktrees/<slug> like workmux does.
 [[keys.command]]
-key = "prefix+w"
+key = "prefix+shift+g"
+type = "plugin_action"
+command = "jm.portals-bootstrap.wt-add-open"
+description = "worktree: new from branch / remote / PR"
+
+# The prefix+S gh-stack menu, ported off the tmux display-menu.
+[[keys.command]]
+key = "prefix+shift+s"
+type = "plugin_action"
+command = "jm.portals-bootstrap.gh-stack-open"
+description = "gh stack"
+
+# Add a DevPod container as a machine, with its repo as a workspace. Host
+# only: run it with Local selected, since a command runs on the selected
+# server and the containers have no devpod.
+[[keys.command]]
+key = "prefix+shift+m"
 type = "popup"
-command = "bash -ic wt-fzf"
-description = "worktree: open or create"
-width = "80%"
-height = "80%"
+command = '"$HOME/.config/herdr/scripts/devpod-add.sh"'
+description = "devpod: add container"
 
-[[keys.command]]
-key = "prefix+d"
-type = "pane"
-command = "bash -ic wt-fzf-remove"
-description = "worktree: remove"
+# Only reached by herdr's own dialog, which prefix+shift+g replaces.
+[worktrees]
+directory = "~/.herdr/worktrees"
 
-
+# Spaces sidebar. Worktrees stay grouped under their repo's row; $jm_mark
+# flags them as its branches, and $jm_stack is the gh-stack layer index --
+# both published by jm.portals-bootstrap on the server, styled here.
+[ui.sidebar.spaces]
+rows = [
+  ["state_icon", { token = "$jm_mark", fg = "#89b4fa" }, "workspace"],
+  ["branch", "git_status", { token = "$jm_stack", fg = "#89b4fa" }],
+]
