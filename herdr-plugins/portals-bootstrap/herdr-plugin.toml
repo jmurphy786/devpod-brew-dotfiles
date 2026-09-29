@@ -1,7 +1,7 @@
 # Local herdr plugin: what herdr's built-in worktree support does not cover --
-# a worktree picker that works from a linked worktree (worktrunk), the
-# per-worktree symlinks and tab layout, and the gh-stack layer index in the
-# spaces sidebar. Opening, removing and closing worktrees are herdr's own.
+# a worktree menu that works from a linked worktree (worktrunk), and the
+# branch glyph and gh-stack layer index in the spaces sidebar. Removing and
+# closing worktrees are herdr's own.
 #
 # Linked, not installed, so it stays editable in place:
 #   herdr plugin link ~/dotfiles/herdr-plugins/portals-bootstrap
@@ -10,18 +10,15 @@ id = "jm.portals-bootstrap"
 name = "Portals bootstrap"
 version = "0.1.0"
 min_herdr_version = "0.9.0"
-description = "Worktree picker, tab layout, symlinks and gh-stack sidebar index"
+description = "Worktree menu and gh-stack sidebar index"
 platforms = ["linux", "macos"]
 
-# Lay out a new worktree workspace: the files.symlink links, then the tabs
-# from the `windows:` block of the repo's .workmux.yaml (falling back to
-# ~/.config/workmux/config.yaml).
+# Publish the sidebar tokens for a worktree workspace (layout.sh). No tabs are
+# created: a worktree opens as one plain tab.
 #
 # Both events are needed. Worktrunk's post-switch hook runs `herdr worktree
 # open`, which emits worktree.opened; worktree.created covers herdr's own
-# `worktree create`. layout.sh ignores an
-# already_open workspace and one that already has more than a single tab, so
-# re-opening a closed worktree does not stack a second set of tabs on it.
+# `worktree create`.
 [[events]]
 on = "worktree.created"
 command = ["bash", "layout.sh"]
@@ -56,19 +53,18 @@ title = "gh stack"
 contexts = ["workspace"]
 command = ["sh", "-c", '"$HERDR_BIN_PATH" plugin pane open --plugin jm.portals-bootstrap --entrypoint gh-stack']
 
-# The worktree picker: worktrunk's `wt switch` over worktrees, local and remote
-# branches, and open PRs, or a typed new name. Works from a linked worktree,
-# unlike herdr's built-in New/Open worktree.
+# The worktree menu (prefix+g): an o / l / a letter menu, then a list. Works from
+# a linked worktree, unlike herdr's built-in New/Open worktree.
 [[panes]]
-id = "wt-switch"
+id = "wt-menu"
 title = "worktrees"
 placement = "popup"
-width = "80%"
-height = "80%"
-command = ["bash", "wt-switch.sh"]
+width = "60%"
+height = "60%"
+command = ["bash", "wt-menu.sh"]
 
 [[actions]]
-id = "wt-switch-open"
-title = "Worktrees: open / new from branch / remote / PR"
+id = "wt-menu-open"
+title = "Worktrees: open / add"
 contexts = ["workspace"]
-command = ["sh", "-c", '"$HERDR_BIN_PATH" plugin pane open --plugin jm.portals-bootstrap --entrypoint wt-switch']
+command = ["sh", "-c", '"$HERDR_BIN_PATH" plugin pane open --plugin jm.portals-bootstrap --entrypoint wt-menu']

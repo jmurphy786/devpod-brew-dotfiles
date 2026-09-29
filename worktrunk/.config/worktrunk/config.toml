@@ -12,5 +12,5 @@ pre-start = "[ -e '{{ repo_path }}/node_modules' ] && [ ! -e '{{ worktree_path }
 
 # Hand the checkout to herdr as a grouped workspace. That emits
 # worktree.opened, which the jm.portals-bootstrap plugin's layout.sh turns into
-# the tab layout. `|| true` so a `wt` run outside herdr is not an error.
+# sidebar tokens. `|| true` so a `wt` run outside herdr is not an error.
 post-switch = "herdr worktree open --path '{{ worktree_path }}' >/dev/null 2>&1 || true"
