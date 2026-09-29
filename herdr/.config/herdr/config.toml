@@ -30,10 +30,12 @@ pane_history = true
 # there in 24d4320 and stopped working in every container).
 #
 # A built-in wins a key clash and the keys.command on it is disabled, so the
-# two defaults these keys would collide with are parked on unused chords:
-# goto (the agent/terminal picker) is prefix+g, new_worktree prefix+shift+g.
+# two defaults these keys would collide with are moved: goto (the client's
+# agent/terminal picker, the one that switches machines) is prefix+g by default
+# and now lives on prefix+shift+g; new_worktree is prefix+shift+g by default and
+# is parked on a chord nothing uses.
 [keys]
-goto = "prefix+alt+o"
+goto = "prefix+shift+g"
 new_worktree = "prefix+alt+g"
 
 # Worktree menu: o open this repo's worktrees, a add one from a local or remote
