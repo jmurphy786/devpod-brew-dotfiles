@@ -18,6 +18,11 @@ cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
 
 self="$PWD/wt-menu.sh"
 
+# The containers' FZF_DEFAULT_OPTS carries a file preview (bat/cat of the
+# selected row), which here renders as "cat: ...: No such file". Blank it for
+# this script and for the `become` step that inherits it.
+export FZF_DEFAULT_OPTS=""
+
 command -v wt  >/dev/null 2>&1 || jm_die "wt is not installed (brew install worktrunk)."
 command -v fzf >/dev/null 2>&1 || jm_die "fzf is not installed (brew install fzf)."
 
