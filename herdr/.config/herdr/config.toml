@@ -36,13 +36,19 @@ pane_history = true
 # is parked on a chord nothing uses.
 #
 # The workspace navigator moves from prefix+w to prefix+h (nvim-style) and the
-# worktree menu takes prefix+w. prefix+h is focus_pane_left by default, so that
-# goes to ctrl+h, as on the host.
+# worktree menu takes prefix+w.
+#
+# ctrl+h/j/k/l are plugin_action keys (nav.sh below), not the built-in
+# focus_pane_*: a built-in swallows the key before nvim sees it. The built-ins
+# move to alt+h/j/k/l so they no longer clash.
 [keys]
 goto = "prefix+shift+g"
 new_worktree = "prefix+alt+g"
 workspace_picker = "prefix+h"
-focus_pane_left = "ctrl+h"
+focus_pane_left = "alt+h"
+focus_pane_down = "alt+j"
+focus_pane_up = "alt+k"
+focus_pane_right = "alt+l"
 
 # Navigate mode (prefix+h): j/k move the workspace selection, vim-style.
 # j/k were pane focus here by default, so that moves to ctrl+j/k. h/l stay pane
@@ -51,6 +57,32 @@ navigate_workspace_down = ["j", "down"]
 navigate_workspace_up = ["k", "up"]
 navigate_pane_down = "ctrl+j"
 navigate_pane_up = "ctrl+k"
+
+# Pane focus that hands ctrl+hjkl to nvim when it is in the foreground, and
+# nvim hands it back at its edge (nvim-tmux-navigator.lua).
+[[keys.command]]
+key = "ctrl+h"
+type = "plugin_action"
+command = "jm.portals-bootstrap.nav-left"
+description = "focus left (nvim-aware)"
+
+[[keys.command]]
+key = "ctrl+j"
+type = "plugin_action"
+command = "jm.portals-bootstrap.nav-down"
+description = "focus down (nvim-aware)"
+
+[[keys.command]]
+key = "ctrl+k"
+type = "plugin_action"
+command = "jm.portals-bootstrap.nav-up"
+description = "focus up (nvim-aware)"
+
+[[keys.command]]
+key = "ctrl+l"
+type = "plugin_action"
+command = "jm.portals-bootstrap.nav-right"
+description = "focus right (nvim-aware)"
 
 # Worktree menu: o open this repo's worktrees, a add one from a local or remote
 # branch.

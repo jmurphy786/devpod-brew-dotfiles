@@ -53,7 +53,33 @@ title = "gh stack"
 contexts = ["workspace"]
 command = ["sh", "-c", '"$HERDR_BIN_PATH" plugin pane open --plugin jm.portals-bootstrap --entrypoint gh-stack']
 
-# The worktree menu (prefix+g): an o / a letter menu, then a list. Works from
+# ctrl+h/j/k/l pane focus that yields to nvim/vim (nav.sh). One action per
+# direction because a keybinding cannot pass arguments.
+[[actions]]
+id = "nav-left"
+title = "Focus pane left (nvim-aware)"
+contexts = ["workspace"]
+command = ["bash", "nav.sh", "left"]
+
+[[actions]]
+id = "nav-down"
+title = "Focus pane down (nvim-aware)"
+contexts = ["workspace"]
+command = ["bash", "nav.sh", "down"]
+
+[[actions]]
+id = "nav-up"
+title = "Focus pane up (nvim-aware)"
+contexts = ["workspace"]
+command = ["bash", "nav.sh", "up"]
+
+[[actions]]
+id = "nav-right"
+title = "Focus pane right (nvim-aware)"
+contexts = ["workspace"]
+command = ["bash", "nav.sh", "right"]
+
+# The worktree menu (prefix+w): an o / a letter menu, then a list. Works from
 # a linked worktree, unlike herdr's built-in New/Open worktree.
 [[panes]]
 id = "wt-menu"
