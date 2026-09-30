@@ -4,7 +4,11 @@
 #
 #   ports.sh --once   one pass over every worktree workspace
 #   ports.sh --loop   repeat every PORTS_INTERVAL seconds (default 5); a second
-#                     copy exits at once (flock). Started by layout.sh.
+#                     copy exits at once (flock).
+#   ports.sh --ensure start the loop detached unless one is already running.
+#                     Run from the focus/create events in herdr-plugin.toml and
+#                     from layout.sh, so the poller comes back after a server
+#                     restart and covers workspaces opened before it existed.
 #
 # A listener is credited to the deepest checkout containing its cwd. Worktrees
 # nest in <repo>/.worktrees/, so the main checkout's path is a prefix of every
@@ -57,15 +61,24 @@ ports_once() {
         --clear-token jm_ports >/dev/null 2>&1
     fi
   done <<<"$rows"
+  # The loop's status is the last report-metadata's; a workspace closed mid-pass
+  # must not read as "herdr is gone" and end the poller.
+  return 0
 }
+
+lock="${XDG_RUNTIME_DIR:-/tmp}/jm-herdr-ports-$(id -u).lock"
 
 case "${1:---once}" in
   --once) ports_once ;;
+  --ensure)
+    # Free lock means no poller. The probe subshell releases it on exit.
+    ( exec 8>"$lock" && flock -n 8 ) || exit 0
+    setsid nohup bash ports.sh --loop >/dev/null 2>&1 </dev/null &
+    ;;
   --loop)
-    lock="${XDG_RUNTIME_DIR:-/tmp}/jm-herdr-ports-$(id -u).lock"
     exec 9>"$lock" || exit 1
     flock -n 9 || exit 0
     while ports_once; do sleep "$INTERVAL"; done
     ;;
-  *) echo "usage: ports.sh [--once|--loop]" >&2; exit 2 ;;
+  *) echo "usage: ports.sh [--once|--loop|--ensure]" >&2; exit 2 ;;
 esac

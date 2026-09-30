@@ -36,6 +36,22 @@ title = "Refresh gh-stack index"
 contexts = ["workspace"]
 command = ["bash", "stack.sh", "--all"]
 
+# The sidebar ports poller (ports.sh) has no start-up event of its own, so any
+# sign of life starts it if it is not running: a focus, a new pane, a worktree
+# opening. That also covers workspaces that predate the plugin and a server
+# restart. `--ensure` is a cheap no-op when the poller is already up.
+[[events]]
+on = "workspace.focused"
+command = ["bash", "ports.sh", "--ensure"]
+
+[[events]]
+on = "pane.focused"
+command = ["bash", "ports.sh", "--ensure"]
+
+[[events]]
+on = "pane.created"
+command = ["bash", "ports.sh", "--ensure"]
+
 # Re-read listening ports now instead of waiting for the next poll tick. The
 # poller itself is started by layout.sh on worktree.created / worktree.opened.
 [[actions]]
