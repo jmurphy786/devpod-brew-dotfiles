@@ -9,6 +9,10 @@ set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
 . ./lib.sh
 
+# Keep the sidebar ports poller alive. Idempotent (flock), so every event may
+# call it; detached so it outlives this hook.
+setsid nohup bash ports.sh --loop >/dev/null 2>&1 &
+
 # worktree.opened fires for a workspace that was already on screen too; that
 # is a focus, not an open.
 [ "$(jm_event already_open)" = "true" ] && exit 0

@@ -36,13 +36,21 @@ title = "Refresh gh-stack index"
 contexts = ["workspace"]
 command = ["bash", "stack.sh", "--all"]
 
+# Re-read listening ports now instead of waiting for the next poll tick. The
+# poller itself is started by layout.sh on worktree.created / worktree.opened.
+[[actions]]
+id = "ports-refresh"
+title = "Refresh listening ports"
+contexts = ["workspace"]
+command = ["bash", "ports.sh", "--once"]
+
 # The `prefix S` gh-stack menu, ported off tmux display-menu.
 [[panes]]
 id = "gh-stack"
 title = "gh stack"
 placement = "popup"
-width = "80%"
-height = "80%"
+width = "50%"
+height = "40%"
 command = ["bash", "gh-stack.sh"]
 
 # A keybinding can invoke an action but not a pane entrypoint, so this is the
@@ -85,8 +93,8 @@ command = ["bash", "nav.sh", "right"]
 id = "wt-menu"
 title = "worktrees"
 placement = "popup"
-width = "60%"
-height = "60%"
+width = "50%"
+height = "40%"
 command = ["bash", "wt-menu.sh"]
 
 [[actions]]

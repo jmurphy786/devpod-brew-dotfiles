@@ -165,7 +165,7 @@ ROWS
         | column -t -s $'\t' \
         | fzf --prompt 'stack> ' --height 100% --border none --no-preview \
               --expect=v,m,s,p,y,c,a \
-              --header "gh stack   ${branch}   $(basename "$PWD")")
+              --header "gh stack  ${branch}")
   [ -z "$out" ] && return 0
 
   key=$(printf '%s\n' "$out" | sed -n 1p)
