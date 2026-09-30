@@ -34,14 +34,20 @@ pane_history = true
 # agent/terminal picker, the one that switches machines) is prefix+g by default
 # and now lives on prefix+shift+g; new_worktree is prefix+shift+g by default and
 # is parked on a chord nothing uses.
+#
+# The workspace navigator moves from prefix+w to prefix+h (nvim-style) and the
+# worktree menu takes prefix+w. prefix+h is focus_pane_left by default, so that
+# goes to ctrl+h, as on the host.
 [keys]
 goto = "prefix+shift+g"
 new_worktree = "prefix+alt+g"
+workspace_picker = "prefix+h"
+focus_pane_left = "ctrl+h"
 
 # Worktree menu: o open this repo's worktrees, a add one from a local or remote
 # branch.
 [[keys.command]]
-key = "prefix+g"
+key = "prefix+w"
 type = "plugin_action"
 command = "jm.portals-bootstrap.wt-menu-open"
 description = "worktrees: open / add"
@@ -51,3 +57,21 @@ key = "prefix+shift+s"
 type = "plugin_action"
 command = "jm.portals-bootstrap.gh-stack-open"
 description = "gh stack"
+
+# Popups run in the focused pane's directory, so these open on the current
+# worktree. The host config has the same two for Local workspaces.
+[[keys.command]]
+key = "prefix+g"
+type = "popup"
+command = "lazygit"
+description = "lazygit"
+width = "90%"
+height = "90%"
+
+[[keys.command]]
+key = "prefix+t"
+type = "popup"
+command = "tuicr"
+description = "tuicr review"
+width = "90%"
+height = "90%"
