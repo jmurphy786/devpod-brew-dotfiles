@@ -79,8 +79,11 @@ herdr_repo() { env -u HERDR_WORKSPACE_ID -u HERDR_TAB_ID -u HERDR_PANE_ID "$HERD
 # herdr_open <repo> <path> -- hand a checkout to herdr so it shows up as a
 # worktree workspace. Idempotent: opening an open workspace just focuses it.
 herdr_open() {
-  (cd "$1" && herdr_repo worktree open --cwd "$1" --path "$2") >/dev/null \
-    || jm_hold "herdr could not open $2."
+  local out
+  # --focus: a CLI open leaves focus where it was. The CLI also exits 0 on an
+  # API error, so the reply is checked for one.
+  out=$(cd "$1" && herdr_repo worktree open --cwd "$1" --path "$2" --focus 2>&1) \
+    && ! grep -q '"error"' <<<"$out" || jm_hold "herdr could not open $2.${out:+ $out}"
 }
 
 # wt_add <repo> <branch> [new] -- check a branch out under <repo>/.worktrees and
