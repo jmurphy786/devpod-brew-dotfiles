@@ -8,7 +8,7 @@
 # Plain git supplies the rows and creates the checkouts under
 # <repo>/.worktrees/<branch>; herdr's own New / Open worktree only run from the
 # parent repo. `herdr worktree open` then registers the checkout with herdr
-# (herdr_open below), and layout.sh links node_modules on that event.
+# (herdr_open below), and layout.sh publishes the sidebar tokens on that event.
 # Deleting is herdr's own remove_worktree (prefix+d).
 #
 # Arguments: (none) the menu; o | a | n a menu row; list here|add.

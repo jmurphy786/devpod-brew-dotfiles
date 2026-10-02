@@ -40,8 +40,8 @@ stow --target="$HOME" "${packages[@]}"
 # herdr plugins. These are global to the user and registered outside the
 # stowed config, so a rebuilt container needs them re-registered even though
 # ~/.config/herdr came back with the dotfiles.
-#   portals-bootstrap  -- local: worktree picker, node_modules link and
-#                         the gh-stack sidebar index
+#   portals-bootstrap  -- local: worktree picker, sidebar tokens and
+#                         the gh-stack index
 #   herdr-navigator    -- from GitHub: ctrl+h/j/k/l across nvim splits and
 #                         herdr panes (pairs with lua/plugins/herdr-navigator.lua)
 echo "Registering herdr plugins..."
