@@ -15,13 +15,11 @@ vim.opt.number = true
 vim.opt.relativenumber = true
 
 -- General
-vim.opt.swapfile = false
 vim.opt.autoread = true
 vim.opt.autowriteall = false
 vim.opt.ttimeoutlen = 10
 vim.o.winborder = "rounded" -- hover / signature help / diagnostic floats
 vim.opt.laststatus = 3 -- one statusline for the whole screen, not per-window
-
 -- Built-in optional plugins (Nvim 0.12): :Undotree, :DiffTool
 pcall(vim.cmd.packadd, "nvim.undotree")
 pcall(vim.cmd.packadd, "nvim.difftool")

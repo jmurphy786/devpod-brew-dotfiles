@@ -38,7 +38,7 @@ pane_history = true
 # The workspace navigator moves from prefix+w to prefix+h (nvim-style) and the
 # worktree menu takes prefix+w.
 #
-# ctrl+h/j/k/l are plugin_action keys (nav.sh below), not the built-in
+# ctrl+h/j/k/l are plugin_action keys (herdr-navigator below), not the built-in
 # focus_pane_*: a built-in swallows the key before nvim sees it. The built-ins
 # move to alt+h/j/k/l so they no longer clash.
 [keys]
@@ -50,6 +50,14 @@ focus_pane_down = "alt+j"
 focus_pane_up = "alt+k"
 focus_pane_right = "alt+l"
 
+# The host config sets these too. They are repeated here because the host's
+# per-machine tabs run `herdr --remote --remote-keybindings server`, which uses
+# this file's keys and not the host's.
+split_vertical = "prefix+%"
+split_horizontal = "prefix+,"
+toggle_sidebar = "prefix+p"
+remove_worktree = "prefix+d"
+
 # Navigate mode (prefix+h): j/k move the workspace selection, vim-style.
 # j/k were pane focus here by default, so that moves to ctrl+j/k. h/l stay pane
 # left/right.
@@ -58,31 +66,45 @@ navigate_workspace_up = ["k", "up"]
 navigate_pane_down = "ctrl+j"
 navigate_pane_up = "ctrl+k"
 
+# Workspace cycling without entering navigate mode. Repeated from the host
+# config for the same reason as the split keys above.
+next_workspace = "ctrl+shift+j"
+previous_workspace = "ctrl+shift+k"
+
 # Pane focus that hands ctrl+hjkl to nvim when it is in the foreground, and
-# nvim hands it back at its edge (nvim-tmux-navigator.lua).
+# nvim hands it back at its edge. Both halves come from
+# kaar/nvim-herdr-navigator (herdr plugin install kaar/nvim-herdr-navigator,
+# lua/plugins/herdr-navigator.lua in nvim).
 [[keys.command]]
 key = "ctrl+h"
 type = "plugin_action"
-command = "jm.portals-bootstrap.nav-left"
-description = "focus left (nvim-aware)"
+command = "herdr-navigator.left"
+description = "navigate left (nvim/herdr)"
 
 [[keys.command]]
 key = "ctrl+j"
 type = "plugin_action"
-command = "jm.portals-bootstrap.nav-down"
-description = "focus down (nvim-aware)"
+command = "herdr-navigator.down"
+description = "navigate down (nvim/herdr)"
 
 [[keys.command]]
 key = "ctrl+k"
 type = "plugin_action"
-command = "jm.portals-bootstrap.nav-up"
-description = "focus up (nvim-aware)"
+command = "herdr-navigator.up"
+description = "navigate up (nvim/herdr)"
 
 [[keys.command]]
 key = "ctrl+l"
 type = "plugin_action"
-command = "jm.portals-bootstrap.nav-right"
-description = "focus right (nvim-aware)"
+command = "herdr-navigator.right"
+description = "navigate right (nvim/herdr)"
+
+# The chords above shadow ctrl+l (clear screen) in shells; this puts it back.
+[[keys.command]]
+key = "prefix+ctrl+l"
+type = "shell"
+command = "\"$HERDR_BIN_PATH\" pane send-keys \"$HERDR_ACTIVE_PANE_ID\" ctrl+l"
+description = "send ctrl+l (clear screen) to pane"
 
 # Worktree menu: o open this repo's worktrees, a add one from a local or remote
 # branch.
