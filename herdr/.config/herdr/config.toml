@@ -9,7 +9,7 @@ onboarding = false
 # jm.portals-bootstrap plugin (herdr-plugins/, linked by setup.sh) they run.
 
 # Only reached by herdr's own New worktree dialog, which the host parks on
-# prefix+alt+g. Worktrunk (~/.config/worktrunk) puts checkouts in
+# prefix+alt+g. The prefix+w menu (wt-menu.sh) puts checkouts in
 # <repo>/.worktrees instead.
 [worktrees]
 directory = "~/.herdr/worktrees"

@@ -8,7 +8,7 @@ PACKAGES=(
     stow zoxide tmux raine/workmux/workmux tuicr
     lazydocker starship claude-code ripgrep resvg file
     yazi fzf lazygit wl-clipboard
-    herdr worktrunk
+    herdr
 )
 for package in "${PACKAGES[@]}"; do
     if brew list "$package" &>/dev/null; then
@@ -40,7 +40,7 @@ stow --target="$HOME" "${packages[@]}"
 # herdr plugins. These are global to the user and registered outside the
 # stowed config, so a rebuilt container needs them re-registered even though
 # ~/.config/herdr came back with the dotfiles.
-#   portals-bootstrap  -- local: worktree picker, symlinks and
+#   portals-bootstrap  -- local: worktree picker, node_modules link and
 #                         the gh-stack sidebar index
 #   herdr-navigator    -- from GitHub: ctrl+h/j/k/l across nvim splits and
 #                         herdr panes (pairs with lua/plugins/herdr-navigator.lua)
