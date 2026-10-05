@@ -3,53 +3,37 @@ local s = ls.snippet
 local t = ls.text_node
 local i = ls.insert_node
 
-return {
-  s(";bash", {
-    t("```bash"),
-    t({"", ""}),
-    i(1),
-    t({"", "```"}),
-  }),
-  
-  s(";cs", {
-    t("```csharp"),
-    t({"", ""}),
-    i(1),
-    t({"", "```"}),
-  }),
-  
-  s(";html", {
-    t("```html"),
-    t({"", ""}),
-    i(1),
-    t({"", "```"}),
-  }),
-  
-  s(";css", {
-    t("```css"),
-    t({"", ""}),
-    i(1),
-    t({"", "```"}),
-  }),
-  
-  s(";js", {
-    t("```javascript"),
-    t({"", ""}),
-    i(1),
-    t({"", "```"}),
-  }),
-  
-  s(";tsx", {
-    t("```tsx"),
-    t({"", ""}),
-    i(1),
-    t({"", "```"}),
-  }),
-  
-  s(";ts", {
-    t("```typescript"),
-    t({"", ""}),
-    i(1),
-    t({"", "```"}),
-  }),
-}
+-- Fenced code block snippet: trigger(s) -> ```lang ... ```
+-- Higher priority on short triggers so ";cs" / ";ts" beat their ";css" / ";tsx" prefix matches.
+local function fence(trigs, lang, priority)
+  local out = {}
+  for _, trig in ipairs(type(trigs) == "table" and trigs or { trigs }) do
+    table.insert(
+      out,
+      s({ trig = trig, priority = priority or 1000 }, {
+        t("```" .. lang),
+        t({ "", "" }),
+        i(1),
+        t({ "", "```" }),
+      })
+    )
+  end
+  return out
+end
+
+local snippets = {}
+local function add(list)
+  vim.list_extend(snippets, list)
+end
+
+add(fence(";bash", "bash"))
+add(fence({ ";cs", ";csharp" }, "csharp", 2000))
+add(fence(";html", "html"))
+add(fence(";css", "css"))
+add(fence(";js", "javascript", 2000))
+add(fence(";tsx", "tsx"))
+add(fence(";ts", "typescript", 2000))
+add(fence(";json", "json"))
+add(fence({ ";yaml", ";yml" }, "yaml"))
+
+return snippets

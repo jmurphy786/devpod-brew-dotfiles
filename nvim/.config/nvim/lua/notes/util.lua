@@ -2,8 +2,15 @@ local M = {}
 
 M.root = vim.fs.normalize("~/obsidian-vault")
 
+-- The vault is reached through a symlink, so files may be opened by either path.
+M.real_root = vim.fs.normalize(vim.uv.fs_realpath(M.root) or M.root)
+
+local function under(path, root)
+  return path == root or path:sub(1, #root + 1) == root .. "/"
+end
+
 local function in_vault(path)
-  return path == M.root or path:sub(1, #M.root + 1) == M.root .. "/"
+  return under(path, M.root) or under(path, M.real_root)
 end
 
 -- The vault root if the buffer's file lives in the vault, else nil.

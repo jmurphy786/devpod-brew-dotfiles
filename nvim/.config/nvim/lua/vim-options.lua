@@ -143,6 +143,43 @@ vim.api.nvim_create_user_command("Jq", function(opts)
   vim.cmd(string.format("%%!jq %s", vim.fn.shellescape(filter)))
 end, { nargs = "?", desc = "Filter buffer through jq" })
 
+-- :Glow - render the current markdown file in glow, in a floating window
+vim.api.nvim_create_user_command("Glow", function()
+  local file = vim.api.nvim_buf_get_name(0)
+  if file == "" then
+    return vim.notify("Glow: buffer has no file", vim.log.levels.WARN)
+  end
+  if vim.bo.modified then
+    vim.cmd("silent write") -- glow reads from disk
+  end
+  local w, h = math.floor(vim.o.columns * 0.85), math.floor(vim.o.lines * 0.85)
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_open_win(buf, true, {
+    relative = "editor",
+    width = w,
+    height = h,
+    style = "minimal",
+    border = "rounded",
+    col = math.floor((vim.o.columns - w) / 2),
+    row = math.floor((vim.o.lines - h) / 2),
+  })
+  vim.fn.jobstart({ "glow", "-p", "-w", tostring(w - 2), file }, { term = true })
+  vim.cmd("startinsert")
+  vim.keymap.set("t", "<Esc>", [[<C-\><C-n>]], { buffer = buf }) -- Esc, then :q
+  vim.keymap.set("n", "q", "<cmd>close<cr>", { buffer = buf })
+  vim.api.nvim_create_autocmd("TermClose", {
+    buffer = buf,
+    once = true,
+    callback = function()
+      vim.schedule(function()
+        pcall(vim.api.nvim_buf_delete, buf, { force = true })
+      end)
+    end,
+  })
+end, { desc = "Preview markdown in glow" })
+
+vim.cmd([[cnoreabbrev <expr> glow getcmdtype() ==# ':' && getcmdline() ==# 'glow' ? 'Glow' : 'glow']])
+
 -- Note commands (:Zettel, :Inbox, :Tag, :Meeting, :Task) live in lua/notes.lua
 
 -- ============================================================

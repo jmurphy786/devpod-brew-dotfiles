@@ -231,6 +231,115 @@ vim.api.nvim_create_user_command("Inbox", new_note_command("0-inbox", "inbox", "
   desc = "Quick capture note in 0-inbox",
 })
 
+-- Appends "- [[child]]" under a "## Notes" heading in the current (parent) buffer, then saves.
+local function link_child(child)
+  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  local entry = "- [[" .. child .. "]]"
+  for _, l in ipairs(lines) do
+    if l == entry then
+      return
+    end
+  end
+  local heading
+  for i, l in ipairs(lines) do
+    if l:match("^##%s+Notes%s*$") then
+      heading = i
+      break
+    end
+  end
+  if heading then
+    local insert_at = heading
+    for i = heading + 1, #lines do
+      if lines[i]:match("^#") then
+        break
+      end
+      if lines[i]:match("%S") then
+        insert_at = i
+      end
+    end
+    vim.api.nvim_buf_set_lines(0, insert_at, insert_at, false, { entry })
+  else
+    local tail = { "", "## Notes", "", entry }
+    vim.api.nvim_buf_set_lines(0, #lines, #lines, false, tail)
+  end
+  vim.cmd("silent! write")
+end
+
+-- Creates <current note's dir>/<title>.md (if missing) with the current note's
+-- tags and a backlink to it. Returns the child path and the parent's stem.
+local function create_child(title)
+  local parent_path = vim.api.nvim_buf_get_name(0)
+  local parent = vim.fn.fnamemodify(parent_path, ":t:r")
+  local path = vim.fs.dirname(parent_path) .. "/" .. title .. ".md"
+  if vim.fn.filereadable(path) == 0 then
+    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    local fm_end = tags.frontmatter_end(lines)
+    local inherited, seen = {}, {}
+    for _, hit in ipairs(tags.scan(lines)) do
+      if hit.lnum + 1 < fm_end and not seen[hit.tag] then
+        seen[hit.tag] = true
+        table.insert(inherited, hit.tag)
+      end
+    end
+    vim.fn.writefile({
+      "---",
+      "tags: [" .. table.concat(inherited, ", ") .. "]",
+      "date: " .. os.date("%Y-%m-%d"),
+      'parent: "[[' .. parent .. ']]"',
+      "---",
+      "# " .. title,
+      "",
+      "Part of [[" .. parent .. "]]",
+      "",
+    }, path)
+  end
+  return path, parent
+end
+
+-- <leader>gd on a [[link]]: open the note, or create it beside this one as a child.
+local function goto_or_create_child()
+  local title = extract_wikilink()
+  if not title or title == "" then
+    vim.lsp.buf.definition()
+    return
+  end
+  local existing = resolve_note(root, title)
+  if existing then
+    vim.cmd.edit(vim.fn.fnameescape(existing))
+    return
+  end
+  local path, parent = create_child(title)
+  vim.cmd.edit(vim.fn.fnameescape(path))
+  vim.notify("Created " .. title .. " next to " .. parent)
+end
+
+-- New zettel beside the current note, inheriting its tags and linking both ways.
+vim.api.nvim_create_user_command("Sub", function(opts)
+  if vim.bo.buftype ~= "" or not util.buf_vault(0) then
+    vim.notify("Current buffer is not a vault note", vim.log.levels.WARN)
+    return
+  end
+  local parent = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":t:r")
+
+  local function make(title)
+    local path = create_child(title)
+    link_child(title)
+    vim.cmd.edit(vim.fn.fnameescape(path))
+  end
+
+  local title = sanitize_title(opts.args or "")
+  if title ~= "" then
+    make(title)
+  else
+    vim.ui.input({ prompt = "Sub-note of " .. parent .. ": " }, function(input)
+      local t = sanitize_title(input or "")
+      if t ~= "" then
+        make(t)
+      end
+    end)
+  end
+end, { nargs = "?", desc = "New sub-note beside the current note, linked both ways" })
+
 local function complete_tags(lead)
   local prefix = lead:gsub("^#", "")
   return vim.tbl_filter(function(t)
@@ -502,6 +611,7 @@ vim.api.nvim_create_autocmd("FileType", {
       end
       return vim.keycode("gf")
     end, { buffer = args.buf, expr = true, desc = "Follow [[link]] / tag or create it" })
+    vim.keymap.set("n", "<leader>gd", goto_or_create_child, { buffer = args.buf, desc = "Go to [[link]] or create it as a child" })
     vim.keymap.set("n", "K", preview, { buffer = args.buf, desc = "Preview [[link]] / tag, else hover" })
     vim.keymap.set("n", "<leader>.", preview, { buffer = args.buf, desc = "Preview [[link]] / tag, else hover" })
 

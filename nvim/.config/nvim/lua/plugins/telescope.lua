@@ -8,7 +8,7 @@ return {
   config = function()
     require("telescope").setup({
       defaults = {
-        file_ignore_patterns = { "node_modules", ".git/", "bin/", "obj/" },
+        file_ignore_patterns = { "node_modules", ".git/", "bin/", "obj/", "^tags/" },
         layout_config = { horizontal = { preview_width = 0.55 } },
       },
       pickers = {
