@@ -7,3 +7,22 @@
     frag = "#78a0b8"
     func = "#d7c483"
     commit = "#c9a554"
+
+# Diff/merge tooling: nvim + diffview.nvim (used by `git difftool`, `git mergetool`, lazygit)
+[diff]
+    tool = nvimdiff
+    colorMoved = default
+[difftool]
+    prompt = false
+[difftool "nvimdiff"]
+    cmd = nvim -d "$LOCAL" "$REMOTE"
+[merge]
+    tool = diffview
+    conflictStyle = zdiff3
+[mergetool]
+    prompt = false
+    keepBackup = false
+[mergetool "diffview"]
+    cmd = nvim -c DiffviewOpen
+[rerere]
+    enabled = true
