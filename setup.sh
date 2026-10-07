@@ -29,9 +29,14 @@ fi
 gh extension install github/gh-stack
 
 cd "$SCRIPT_DIR"
+# archive/ holds retired configs, not a stow package -- stowing it would drop
+# its children (tmux, workmux, zellij) into $HOME.
 packages=()
 for d in */; do
-    packages+=("${d%/}")
+    case "$d" in
+        archive/) ;;
+        *) packages+=("${d%/}") ;;
+    esac
 done
 stow --target="$HOME" "${packages[@]}"
 
