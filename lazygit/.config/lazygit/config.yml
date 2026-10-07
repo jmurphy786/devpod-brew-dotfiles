@@ -38,6 +38,21 @@
 #
 # Stage only the conflicted files and never commit by hand mid-rebase; `continue`
 # makes the commit with the original message.
+# Miasma palette (matches the wezterm colour scheme)
+gui:
+  theme:
+    activeBorderColor: ['#5f875f', bold]
+    inactiveBorderColor: ['#666666']
+    searchingActiveBorderColor: ['#c9a554', bold]
+    optionsTextColor: ['#78824b']
+    selectedLineBgColor: ['#383838']
+    inactiveViewSelectedLineBgColor: ['#2e2e2e']
+    cherryPickedCommitFgColor: ['#222222']
+    cherryPickedCommitBgColor: ['#c9a554']
+    markedBaseCommitFgColor: ['#222222']
+    markedBaseCommitBgColor: ['#bb7744']
+    unstagedChangesColor: ['#b36d43']
+    defaultFgColor: ['#c2c2b0']
 customCommands:
   - key: '<c-g>'
     context: 'global'

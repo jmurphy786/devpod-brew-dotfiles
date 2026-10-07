@@ -4,7 +4,7 @@
 # AppHost is visible from the sidebar.
 #
 #   ports.sh --once   one pass over every workspace
-#   ports.sh --loop   repeat every PORTS_INTERVAL seconds (default 5); a second
+#   ports.sh --loop   repeat every PORTS_INTERVAL seconds (default 15); a second
 #                     copy exits at once (flock).
 #   ports.sh --ensure start the loop detached unless one is already running.
 #                     Run from the focus/create events in herdr-plugin.toml and
@@ -31,7 +31,7 @@ set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
 . ./lib.sh
 
-INTERVAL="${PORTS_INTERVAL:-5}"
+INTERVAL="${PORTS_INTERVAL:-15}"
 MAX_SHOWN="${PORTS_MAX_SHOWN:-4}"
 # Outlives a missed pass or two, but a dead poller's badges still expire.
 TTL_MS=$((INTERVAL * 3000))

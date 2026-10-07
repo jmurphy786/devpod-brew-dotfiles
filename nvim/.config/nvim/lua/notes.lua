@@ -621,7 +621,11 @@ vim.api.nvim_create_autocmd("FileType", {
         if ev.event ~= "InsertLeave" then
           tags.invalidate(util.buf_vault(ev.buf))
         end
-        check_tags(ev.buf)
+        if ev.event == "InsertLeave" then
+          vim.schedule(function() check_tags(ev.buf) end)
+        else
+          check_tags(ev.buf)
+        end
       end,
     })
     -- mini.pairs inserts "[]" through a mapping, which blink never sees as a

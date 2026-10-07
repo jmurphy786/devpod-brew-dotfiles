@@ -45,7 +45,17 @@ if vim.fn.has("wsl") == 1 then
     paste = { ["+"] = osc52.paste("+"), ["*"] = osc52.paste("*") },
   }
 end
-vim.opt.clipboard = "unnamedplus"
+-- Not "unnamedplus": that sent every delete (dd, x, c) through OSC 52 and
+-- stalled on the round trip. Only yanks reach the system clipboard; `p` reads
+-- the local register. Use "+dd for a delete you want in Windows.
+vim.api.nvim_create_autocmd("TextYankPost", {
+  callback = function()
+    local ev = vim.v.event
+    if ev.operator == "y" and (ev.regname == "" or ev.regname == '"') then
+      vim.fn.setreg("+", ev.regcontents, ev.regtype)
+    end
+  end,
+})
 
 -- ============================================================
 -- DIAGNOSTICS
@@ -77,6 +87,21 @@ vim.api.nvim_create_autocmd({ "InsertLeave", "TextChanged", "FocusLost", "BufLea
       and vim.bo[buf].modified
     then
       vim.api.nvim_buf_call(buf, function() vim.cmd("silent! write") end)
+    end
+  end,
+})
+
+vim.keymap.set("n", "<leader>w", "<cmd>wa<cr>", { desc = "Save all buffers" })
+
+-- :source parses a file as Vimscript, so on a shell script it fails with E488.
+-- In sh buffers, :source / :so syntax-checks with bash instead.
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = { "sh", "bash" },
+  callback = function()
+    for _, lhs in ipairs({ "source", "so" }) do
+      vim.cmd(string.format(
+        [[cnoreabbrev <buffer> <expr> %s (getcmdtype() == ':' && getcmdline() ==# '%s') ? '!bash -n %%' : '%s']],
+        lhs, lhs, lhs))
     end
   end,
 })

@@ -1,0 +1,9 @@
+# Diff colours: brighter and higher contrast than the terminal's dim green/red.
+# Read by git and by lazygit's diff view, in addition to ~/.gitconfig.
+[color "diff"]
+    new = "#9fd67a"
+    old = "#e8604c"
+    meta = "#c9a554"
+    frag = "#78a0b8"
+    func = "#d7c483"
+    commit = "#c9a554"
