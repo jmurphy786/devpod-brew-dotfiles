@@ -6,7 +6,7 @@ onboarding = false
 # from here. This file covers what the server applies to panes running in the
 # container, including the [[keys.command]] plugin_action keys at the bottom:
 # custom commands are server-side config, so they live next to the
-# jm.portals-bootstrap plugin (herdr-plugins/, linked by setup.sh) they run.
+# jm.portals-bootstrap plugin (local-plugins/, linked by setup.sh) they run.
 
 # Only reached by herdr's own New worktree dialog, which the host parks on
 # prefix+alt+g. The prefix+w menu (wt-menu.sh) puts checkouts in

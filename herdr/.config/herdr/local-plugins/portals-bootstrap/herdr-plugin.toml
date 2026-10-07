@@ -4,7 +4,7 @@
 # closing worktrees are herdr's own.
 #
 # Linked, not installed, so it stays editable in place:
-#   herdr plugin link ~/dotfiles/herdr-plugins/portals-bootstrap
+#   herdr plugin link ~/.config/herdr/local-plugins/portals-bootstrap
 
 id = "jm.portals-bootstrap"
 name = "Portals bootstrap"

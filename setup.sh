@@ -29,23 +29,16 @@ fi
 gh extension install github/gh-stack
 
 cd "$SCRIPT_DIR"
-# herdr-plugins/ holds plugin sources linked by `herdr plugin link` below, not
-# a stow package -- stowing it would drop a stray ~/portals-bootstrap symlink.
 packages=()
 for d in */; do
-    [ "$d" = "herdr-plugins/" ] || packages+=("${d%/}")
+    packages+=("${d%/}")
 done
 stow --target="$HOME" "${packages[@]}"
 
-# herdr plugins. These are global to the user and registered outside the
-# stowed config, so a rebuilt container needs them re-registered even though
-# ~/.config/herdr came back with the dotfiles.
-#   portals-bootstrap  -- local: worktree picker, sidebar tokens and
-#                         the gh-stack index
-#   herdr-navigator    -- from GitHub: ctrl+h/j/k/l across nvim splits and
-#                         herdr panes (pairs with lua/plugins/herdr-navigator.lua)
 echo "Registering herdr plugins..."
-herdr plugin link "$SCRIPT_DIR/herdr-plugins/portals-bootstrap" || true
+# portals-bootstrap ships in the herdr package (stowed above) and is linked, not
+# installed, so edits in the repo apply live.
+herdr plugin link "$HOME/.config/herdr/local-plugins/portals-bootstrap" || true
 herdr plugin install kaar/nvim-herdr-navigator || true
 
 # Lets herdr resume claude sessions (claude --resume) after a server restart.
