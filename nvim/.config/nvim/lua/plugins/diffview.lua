@@ -1,5 +1,7 @@
 return {
     "sindrets/diffview.nvim",
+    -- cmd so `git mergetool` (nvim -c DiffviewOpen) works before any key has loaded the plugin
+    cmd = { "DiffviewOpen", "DiffviewClose", "DiffviewFileHistory", "DiffviewToggleFiles", "DiffviewFocusFiles", "DiffviewRefresh" },
     keys = {
         { "<leader>gh", "<cmd>DiffviewFileHistory %<cr>",      desc = "Git file history" },
         { "<leader>gh", ":'<,'>DiffviewFileHistory<cr>",       desc = "Git selection history", mode = "v" },
