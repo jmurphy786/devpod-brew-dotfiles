@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 echo "Installing Homebrew packages..."
 PACKAGES=(
-    stow zoxide tmux raine/workmux/workmux tuicr
+    stow zoxide  tuicr
     lazydocker starship claude-code ripgrep resvg file
     yazi fzf lazygit wl-clipboard
     herdr

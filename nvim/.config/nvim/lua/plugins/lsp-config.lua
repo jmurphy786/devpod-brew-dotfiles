@@ -114,10 +114,33 @@ return {
 
       -- Nvim 0.11 defaults already provide: K (hover), grn rename, gra code action,
       -- grr references, gri implementation, grt type definition, ]d / [d diagnostics.
-      vim.keymap.set("n", "<leader>gd", vim.lsp.buf.definition, { desc = "Go to definition" })
+      -- Ambient wildcard declarations (e.g. vite/client.d.ts for *.module.css)
+      -- show up next to the real target; drop node_modules hits unless they
+      -- are the only results.
+      local function definition_no_node_modules()
+        vim.lsp.buf.definition({
+          on_list = function(res)
+            local items = vim.tbl_filter(function(i)
+              return not i.filename:find("/node_modules/", 1, true)
+            end, res.items)
+            if #items == 0 then
+              items = res.items
+            end
+            if #items == 1 then
+              vim.cmd("edit " .. vim.fn.fnameescape(items[1].filename))
+              vim.api.nvim_win_set_cursor(0, { items[1].lnum, items[1].col - 1 })
+            else
+              vim.fn.setqflist({}, " ", { title = res.title, items = items })
+              vim.cmd("copen")
+            end
+          end,
+        })
+      end
+
+      vim.keymap.set("n", "<leader>gd", definition_no_node_modules, { desc = "Go to definition" })
       vim.keymap.set("n", "<leader>gD", function()
         vim.cmd("rightbelow vsplit")
-        vim.lsp.buf.definition()
+        definition_no_node_modules()
       end, { desc = "Go to definition in vsplit" })
       vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { desc = "Code action" })
       vim.keymap.set("n", "<leader>.", function()
