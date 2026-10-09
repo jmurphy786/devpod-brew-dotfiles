@@ -26,7 +26,7 @@ if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
   git clone https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
 fi
 
-gh extension install github/gh-stack
+gh extension list | grep -q 'github/gh-stack' || gh extension install github/gh-stack
 
 cd "$SCRIPT_DIR"
 # archive/ holds retired configs, not a stow package -- stowing it would drop
@@ -41,10 +41,12 @@ done
 stow --target="$HOME" "${packages[@]}"
 
 echo "Registering herdr plugins..."
+
 # portals-bootstrap ships in the herdr package (stowed above) and is linked, not
 # installed, so edits in the repo apply live.
-herdr plugin link "$HOME/.config/herdr/local-plugins/portals-bootstrap" || true
-herdr plugin install kaar/nvim-herdr-navigator || true
+herdr plugin link "$HOME/.config/herdr/local-plugins/portals-bootstrap" </dev/null || true
+herdr plugin install --yes kaar/nvim-herdr-navigator </dev/null || true
+herdr integration install claude </dev/null || true
 
 # Lets herdr resume claude sessions (claude --resume) after a server restart.
 herdr integration install claude || true
