@@ -39,10 +39,6 @@ for d in */; do
 done
 stow --target="$HOME" "${packages[@]}"
 
-# .devcontainer.json bind-mounts host ~/.local/share/opencode, which makes Docker
-# create ~/.local and ~/.local/share as root; herdr needs ~/.local/state.
-sudo chown "$(id -u):$(id -g)" "$HOME/.local" "$HOME/.local/share" 2>/dev/null || true
-
 echo "Registering herdr plugins..."
 
 # portals-bootstrap ships in the herdr package (stowed above) and is linked, not
