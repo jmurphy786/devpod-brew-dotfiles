@@ -21,14 +21,11 @@ done
 
 rm -f ~/.bashrc
 echo "Stowing dotfiles..."
-if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
-  echo "Installing Tmux Plugin Manager..."
-  git clone https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
-fi
 
-if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-  gh extension list 2>/dev/null | grep -q 'github/gh-stack' || gh extension install github/gh-stack || true
-fi
+# if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+#   gh extension list 2>/dev/null | grep -q 'github/gh-stack' || gh extension install github/gh-stack || true
+# fi
+#
 
 cd "$SCRIPT_DIR"
 # archive/ holds retired configs, not a stow package -- stowing it would drop
