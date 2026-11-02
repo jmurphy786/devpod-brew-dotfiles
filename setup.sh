@@ -46,9 +46,9 @@ echo "Registering herdr plugins..."
 # installed, so edits in the repo apply live.
 herdr plugin link "$HOME/.config/herdr/local-plugins/portals-bootstrap" </dev/null || true
 herdr plugin install --yes kaar/nvim-herdr-navigator </dev/null || true
-herdr integration install claude </dev/null || true
+#herdr integration install claude </dev/null || true
 
 # Lets herdr resume claude sessions (claude --resume) after a server restart.
-herdr integration install claude || true
+#herdr integration install claude || true
 
 echo "Done!"
