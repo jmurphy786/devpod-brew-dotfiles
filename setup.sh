@@ -26,7 +26,9 @@ if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
   git clone https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
 fi
 
-gh extension list | grep -q 'github/gh-stack' || gh extension install github/gh-stack
+if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+  gh extension list 2>/dev/null | grep -q 'github/gh-stack' || gh extension install github/gh-stack || true
+fi
 
 cd "$SCRIPT_DIR"
 # archive/ holds retired configs, not a stow package -- stowing it would drop
